@@ -120,7 +120,7 @@ DEBUG ?= 0
 
 # Default target
 .PHONY: submit
-submit: show-addresses test-generic-relayer
+submit: test-generic-relayer
 
 # Test the generic relayer API
 .PHONY: test-generic-relayer
