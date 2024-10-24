@@ -125,14 +125,16 @@ submit: test-generic-relayer
 # Test the generic relayer API
 .PHONY: test-generic-relayer
 test-generic-relayer:
-	@echo "Submitting transaction to generic relayer API..."
+	@echo ""
+	@echo "Submitting request to generic relayer API..."
+	@echo ""
 ifeq ($(DEBUG),1)
 	@echo "Using the following data:"
 	@echo "  EMIT_EMAIL_COMMAND_ADDRESS: $(EMIT_EMAIL_COMMAND_ADDRESS)"
 	@echo "  DKIM_PROXY_ADDRESS: $(DKIM_PROXY_ADDRESS)"
 	@echo "  EMAIL: $(EMAIL)"
 endif
-	@curl -L 'https://relayer.zk.email/api/submit' \
+	@RESPONSE=$$(curl -s -L 'https://relayer.zk.email/api/submit' \
 	-H 'Content-Type: application/json' \
 	-H 'Accept: application/json' \
 	--data-raw '{ \
@@ -158,7 +160,15 @@ endif
 		"subject": $(SUBJECT), \
 		"body": $(BODY), \
 		"chain": "$(CHAIN)" \
-	}'
+	}'); \
+	echo "$$RESPONSE" | jq -r '.status' | \
+	if [ "$$(cat)" = "success" ]; then \
+		echo Response: "\033[0;32m$$RESPONSE\033[0m"; \
+		echo ""; \
+	else \
+		echo Response: "$$RESPONSE"; \
+		echo ""; \
+	fi
 
 # Status command
 .PHONY: status
@@ -176,7 +186,7 @@ status:
 help:
 	@echo ""
 	@echo "Available targets:"
-	@echo "  submit EMAIL=your@email.com [DEBUG=1]    Submit a transaction to the generic relayer API"
+	@echo "  submit EMAIL=your@email.com [DEBUG=1]    Submit a request to the generic relayer API"
 	@echo "  status REQUEST=<request-id>              Check the status of a specific request"
 	@echo "  help                                     Display this help message"
 	@echo ""
