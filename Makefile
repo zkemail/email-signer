@@ -145,7 +145,7 @@ endif
 		"functionAbi": $(FUNCTION_ABI), \
 		"commandTemplate": "Emit string {string}", \
 		"commandParams": [ \
-			"testing" \
+			"hello" \
 		], \
 		"templateId": "0x25d6c3eada7b2926c822bbfebfc3173123afb205cf093a8cae6622a56712f8a", \
 		"remainingArgs": [ \
