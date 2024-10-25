@@ -181,6 +181,37 @@ status:
 	@curl -L 'https://relayer.zk.email/api/status/$(REQUEST)' \
 	-H 'Accept: application/json'
 
+# New deploy target
+.PHONY: deploy
+deploy:
+	@if ! command -v forge &> /dev/null; then \
+		echo "Error: forge is not installed. Please install Foundry:"; \
+		echo "https://book.getfoundry.sh/getting-started/installation"; \
+		exit 1; \
+	fi
+	@if ! command -v npm &> /dev/null; then \
+		echo "Error: npm is not installed. Please install Node.js and npm:"; \
+		echo "https://nodejs.org/en/download/"; \
+		exit 1; \
+	fi
+	@if [ ! -f .env ]; then \
+		echo "Error: .env file not found. Please create one based on .env.example"; \
+		exit 1; \
+	fi
+	@echo "Installing dependencies..."
+	@forge install
+	@npm install
+	@source .env && \
+	if [ -z "$$PRIVATE_KEY" ] || [ -z "$$RPC_URL" ] || [ -z "$$CHAIN_ID" ]; then \
+		echo "Error: PRIVATE_KEY, RPC_URL, and CHAIN_ID must be set in .env file"; \
+		exit 1; \
+	fi; \
+	VERIFY_FLAG=""; \
+	if [ ! -z "$$ETHERSCAN_API_KEY" ]; then \
+		VERIFY_FLAG="--verify --etherscan-api-key $$ETHERSCAN_API_KEY"; \
+	fi; \
+	forge script script/DeployEmitEmailCommand.s.sol:Deploy --rpc-url $$RPC_URL --chain-id $$CHAIN_ID --broadcast --legacy $$VERIFY_FLAG
+
 # Help target
 .PHONY: help
 help:
@@ -188,8 +219,16 @@ help:
 	@echo "Available targets:"
 	@echo "  submit EMAIL=your@email.com [DEBUG=1]    Submit a request to the generic relayer API"
 	@echo "  status REQUEST=<request-id>              Check the status of a specific request"
+	@echo "  deploy                                   Deploy the contracts using Foundry"
 	@echo "  help                                     Display this help message"
 	@echo ""
 	@echo "Options:"
 	@echo "  DEBUG=1    Enable debug mode to show addresses and email"
+	@echo ""
+	@echo "Environment variables (set in .env file):"
+	@echo "  PRIVATE_KEY         Your private key for deployment"
+	@echo "  SIGNER              ICP Canister signer than can update the DKIM registry"
+	@echo "  RPC_URL             RPC URL for the target network"
+	@echo "  CHAIN_ID            Chain ID of the target network"
+	@echo "  ETHERSCAN_API_KEY   (Optional) Etherscan API key for contract verification"
 	@echo ""
