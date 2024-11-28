@@ -1,22 +1,17 @@
 {
-  "name": "generic-relayer-template",
-  "version": "1.0.0",
-  "description": "**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**",
-  "main": "index.js",
-  "directories": {
-    "lib": "lib",
-    "test": "test"
-  },
+  "name": "@zk-email/generic-relayer-template",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Example contracts and typescripts to use a generic relayer",
+  "workspaces": [
+    "contracts",
+    "ts"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "install": "yarn workspaces -pt run build",
+    "test": "yarn workspaces -pt run test"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "@openzeppelin/contracts": "^5.0.0",
-    "@openzeppelin/contracts-upgradeable": "^5.0.0",
-    "@zk-email/contracts": "^6.1.5",
-    "@zk-email/ether-email-auth-contracts": "^0.0.2-preview"
-  }
+  "license": "MIT"
 }
