@@ -1,36 +1,24 @@
 require("dotenv").config();
-import { emailAuthAbi, emitEmailCommandAbi } from "./generated";
+import { emitEmailCommandAbi } from "./generated";
 import {
-    encodeAbiParameters,
     getContract,
-    parseAbiParameters,
     createWalletClient,
     createPublicClient,
-    http
+    http,
+    GetContractReturnType,
+    WalletClient
 } from "viem";
 import { privateKeyToAccount } from 'viem/accounts'
 import { baseSepolia } from 'viem/chains';
-import { AbiFunction } from 'viem';
-import { RelayerInput, CommandTypes } from './types';
+import { RelayerSubmitRequest, RelayerStatusResponse, CommandTypes, RelayerSubmitResponse, EmailAuthMsg } from './types';
 import axios from "axios";
+
 
 /// PRIVATE_KEY: a private key of the sender
 if (!process.env.PRIVATE_KEY) {
     throw new Error('PRIVATE_KEY is not defined');
 }
 const privateKey: `0x${string}` = process.env.PRIVATE_KEY as `0x${string}`;
-
-/// EMIT_EMAIL_COMMAND_ADDR: an address of the EmitEmailCommand contract
-if (!process.env.EMIT_EMAIL_COMMAND_ADDR) {
-    throw new Error('EMIT_EMAIL_COMMAND_ADDR is not defined');
-}
-const emitEmailCommandAddr: `0x${string}` = process.env.EMIT_EMAIL_COMMAND_ADDR as `0x${string}`;
-
-/// DKIM_CONTRACT_ADDR: an address of the DKIM contract
-if (!process.env.DKIM_CONTRACT_ADDR) {
-    throw new Error('DKIM_CONTRACT_ADDR is not defined');
-}
-const dkimContractAddr: `0x${string}` = process.env.DKIM_CONTRACT_ADDR as `0x${string}`;
 
 /// RELAYER_URL: a URL of the relayer
 if (!process.env.RELAYER_URL) {
@@ -49,16 +37,9 @@ const walletClient = createWalletClient({
 
 const account = privateKeyToAccount(privateKey);
 
-const emitEmailCommandContract = getContract({
-    address: emitEmailCommandAddr,
-    abi: emitEmailCommandAbi,
-    client: {
-        public: publicClient,
-        wallet: walletClient,
-    }
-});
+type EmitEmailCommandContract = GetContractReturnType<typeof emitEmailCommandAbi, WalletClient>;
 
-async function getEmailAuthAddress(accountCode: string, emailAddress: string, ownerAddr: `0x${string}`): Promise<`0x${string}`> {
+async function getEmailAuthAddress(emitEmailCommandContract: EmitEmailCommandContract, accountCode: string, emailAddress: string, ownerAddr: `0x${string}`): Promise<`0x${string}`> {
     const accountSalt: `0x${string}` = await axios({
         method: "POST",
         url: `${relayerUrl}/getAccountSalt`,
@@ -70,29 +51,42 @@ async function getEmailAuthAddress(accountCode: string, emailAddress: string, ow
     return emitEmailCommandContract.read.computeEmailAuthAddress([ownerAddr, accountSalt]);
 }
 
-async function fetchCommandTemplate(templateIdx: number): Promise<{ commandTemplate: string, templateId: string }> {
+async function fetchCommandTemplate(emitEmailCommandContract: EmitEmailCommandContract, templateIdx: number): Promise<{ commandTemplate: string, templateId: string }> {
     const commandTemplates = await emitEmailCommandContract.read.commandTemplates();
     const commandTemplate = commandTemplates[templateIdx].join(' ');
     const templateId = await emitEmailCommandContract.read.computeTemplateId([BigInt(templateIdx)]);
     return { commandTemplate, templateId: `0x${templateId.toString(16)}` };
 }
 
-function buildCommandParams(templateIdx: CommandTypes, commandValue: string | number | bigint): string[] {
+function buildCommandParams(templateIdx: CommandTypes, commandValue: string): string[] {
     let commandParams: string[] = [];
     switch (templateIdx) {
         case CommandTypes.String:
             commandParams.push(commandValue as string);
             break;
         case CommandTypes.Uint:
-            commandParams.push(commandValue.toString());
+            const uintValue = Number(commandValue);
+            if (Number.isInteger(uintValue) === false) {
+                throw new Error('Uint value must be an integer');
+            }
+            if (uintValue < 0) {
+                throw new Error('Uint value must be greater than or equal to 0');
+            }
+            commandParams.push(commandValue);
             break;
         case CommandTypes.Int:
-            commandParams.push(commandValue.toString());
+            const intValue = Number(commandValue);
+            if (Number.isInteger(intValue) === false) {
+                throw new Error('Int value must be an integer');
+            }
+            commandParams.push(commandValue);
             break;
         case CommandTypes.Decimals:
-            commandParams.push(((commandValue as bigint) * (10n ** 18n)).toString());
+            // [TODO] Assert the format of the given value
+            commandParams.push(commandValue);
             break;
         case CommandTypes.EthAddr:
+            // [TODO] Assert the format of the given value
             commandParams.push(commandValue as string);
             break;
         default:
@@ -102,20 +96,22 @@ function buildCommandParams(templateIdx: CommandTypes, commandValue: string | nu
 }
 
 async function buildRelayerInput(
+    emitEmailCommandContract: EmitEmailCommandContract,
+    dkimContractAddr: `0x${string}`,
     accountCode: string,
     emailAddress: string,
     ownerAddr: `0x${string}`,
     templateIdx: CommandTypes,
-    commandValue: string | number | bigint,
+    commandValue: string,
     subject: string,
     body: string
-): Promise<RelayerInput> {
-    const emailAuthAddr = await getEmailAuthAddress(accountCode, emailAddress, ownerAddr);
+): Promise<RelayerSubmitRequest> {
+    const emailAuthAddr = await getEmailAuthAddress(emitEmailCommandContract, accountCode, emailAddress, ownerAddr);
     const emailAuthCode = await publicClient.getCode({
         address: emailAuthAddr
     });
     const codeExistsInEmail = emailAuthCode === undefined;
-    const { commandTemplate, templateId } = await fetchCommandTemplate(templateIdx);
+    const { commandTemplate, templateId } = await fetchCommandTemplate(emitEmailCommandContract, templateIdx);
     const commandParams = buildCommandParams(templateIdx, commandValue);
     return {
         dkimContractAddress: dkimContractAddr,
@@ -131,20 +127,59 @@ async function buildRelayerInput(
     };
 }
 
-async function emitCommandViaEmail(
+const checkStatus = async (relayerUrl: string, id: string, timeout: number = 30000): Promise<EmailAuthMsg> => {
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeout) {
+        const res: RelayerStatusResponse = await axios({
+            method: "GET",
+            url: `${relayerUrl}/status/${id}`,
+        });
+
+        if (res.request.status === "Finished") {
+            return res.emailAuthMsg;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    throw new Error("Timeout");
+};
+
+export async function emitCommandViaEmail(
+    emitEmailCommandAddr: `0x${string}`,
     accountCode: string,
     emailAddress: string,
     ownerAddr: `0x${string}`,
     templateIdx: CommandTypes,
-    commandValue: string | number | bigint,
+    commandValue: string,
     subject: string,
-    body: string
-) {
-    const relayerInput = await buildRelayerInput(accountCode, emailAddress, ownerAddr, templateIdx, commandValue, subject, body);
-    const requestId: string = await axios({
+    body: string,
+    timeout: number = 120000
+): Promise<`0x${string}`> {
+    const emitEmailCommandContract = getContract({
+        address: emitEmailCommandAddr,
+        abi: emitEmailCommandAbi,
+        client: {
+            public: publicClient,
+            wallet: walletClient,
+        }
+    });
+    const dkimContractAddr = await emitEmailCommandContract.read.dkimAddr();
+    const relayerInput = await buildRelayerInput(emitEmailCommandContract, dkimContractAddr, accountCode, emailAddress, ownerAddr, templateIdx, commandValue, subject, body);
+    const { id }: RelayerSubmitResponse = await axios({
         method: "POST",
         url: `${relayerUrl}/submit`,
         data: relayerInput,
     });
-    // const hash = emitEmailCommandContract.write.emitEmailCommand([], {});
+
+    try {
+        const emailAuthMsg = await checkStatus(relayerUrl, id, timeout);
+        const hash = emitEmailCommandContract.write.emitEmailCommand([emailAuthMsg, ownerAddr, BigInt(templateIdx)], {
+            account
+        });
+        return hash;
+    } catch (e) {
+        throw new Error(`Failed to emit command via email: ${e}`);
+    }
 }
+

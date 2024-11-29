@@ -12,6 +12,7 @@
     "@zk-email/relayer-utils": "^0.3.7",
     "axios": "^1.6.7",
     "circomlibjs": "^0.1.7",
+    "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "viem": "^2.21.25"
   },
