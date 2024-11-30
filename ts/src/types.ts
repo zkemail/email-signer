@@ -17,6 +17,12 @@ export enum CommandTypes {
 //     EthAddr?: string;
 // }
 
+export interface RelayerAccountSaltResponse {
+    accountCode: `0x${string}`;
+    accountSalt: `0x${string}`;
+    emailAddress: string;
+}
+
 export interface RelayerSubmitRequest {
     dkimContractAddress: string;
     accountCode: string;
@@ -39,12 +45,12 @@ export interface RelayerSubmitResponse {
 export interface RelayerStatusResponse {
     message: string;
     request: {
-        submittedRequest: RelayerSubmitRequest;
+        body: RelayerSubmitRequest;
         id: string;
         status: string;
         updatedAt: string;
     },
-    emailAuthMsg: EmailAuthMsg;
+    response: EmailAuthMsg;
 }
 
 export interface EmailProof {

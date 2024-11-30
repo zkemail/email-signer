@@ -10,7 +10,7 @@ import {
 } from "viem";
 import { privateKeyToAccount } from 'viem/accounts'
 import { baseSepolia } from 'viem/chains';
-import { RelayerSubmitRequest, RelayerStatusResponse, CommandTypes, RelayerSubmitResponse, EmailAuthMsg } from './types';
+import { RelayerSubmitRequest, RelayerStatusResponse, CommandTypes, RelayerSubmitResponse, EmailAuthMsg, RelayerAccountSaltResponse } from './types';
 import axios from "axios";
 
 
@@ -40,15 +40,15 @@ const account = privateKeyToAccount(privateKey);
 type EmitEmailCommandContract = GetContractReturnType<typeof emitEmailCommandAbi, WalletClient>;
 
 async function getEmailAuthAddress(emitEmailCommandContract: EmitEmailCommandContract, accountCode: string, emailAddress: string, ownerAddr: `0x${string}`): Promise<`0x${string}`> {
-    const accountSalt: `0x${string}` = await axios({
+    const res = await axios<RelayerAccountSaltResponse>({
         method: "POST",
-        url: `${relayerUrl}/getAccountSalt`,
+        url: `${relayerUrl}/accountSalt`,
         data: {
-            account_code: accountCode,
-            email_addr: emailAddress,
+            accountCode: accountCode,
+            emailAddress: emailAddress,
         },
     });
-    return emitEmailCommandContract.read.computeEmailAuthAddress([ownerAddr, accountSalt]);
+    return emitEmailCommandContract.read.computeEmailAuthAddress([ownerAddr, res.data.accountSalt]);
 }
 
 async function fetchCommandTemplate(emitEmailCommandContract: EmitEmailCommandContract, templateIdx: number): Promise<{ commandTemplate: string, templateId: string }> {
@@ -107,10 +107,13 @@ async function buildRelayerInput(
     body: string
 ): Promise<RelayerSubmitRequest> {
     const emailAuthAddr = await getEmailAuthAddress(emitEmailCommandContract, accountCode, emailAddress, ownerAddr);
+    console.log(`Email Auth Address: ${emailAuthAddr}`);
     const emailAuthCode = await publicClient.getCode({
         address: emailAuthAddr
     });
+    console.log(`Email Auth Code: ${emailAuthCode}`);
     const codeExistsInEmail = emailAuthCode === undefined;
+    console.log(`Code Exists in Email: ${codeExistsInEmail}`);
     const { commandTemplate, templateId } = await fetchCommandTemplate(emitEmailCommandContract, templateIdx);
     const commandParams = buildCommandParams(templateIdx, commandValue);
     return {
@@ -131,13 +134,17 @@ const checkStatus = async (relayerUrl: string, id: string, timeout: number = 300
     const startTime = Date.now();
 
     while (Date.now() - startTime < timeout) {
-        const res: RelayerStatusResponse = await axios({
-            method: "GET",
-            url: `${relayerUrl}/status/${id}`,
-        });
+        try {
+            const res = await axios<RelayerStatusResponse>({
+                method: "GET",
+                url: `${relayerUrl}/status/${id}`,
+            });
 
-        if (res.request.status === "Finished") {
-            return res.emailAuthMsg;
+            if (res.data.request.status === "Finished") {
+                return res.data.response;
+            }
+        } catch (e) {
+            console.log(e);
         }
 
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -166,11 +173,14 @@ export async function emitCommandViaEmail(
     });
     const dkimContractAddr = await emitEmailCommandContract.read.dkimAddr();
     const relayerInput = await buildRelayerInput(emitEmailCommandContract, dkimContractAddr, accountCode, emailAddress, ownerAddr, templateIdx, commandValue, subject, body);
-    const { id }: RelayerSubmitResponse = await axios({
+    console.log(`Relayer Input: ${JSON.stringify(relayerInput)}`);
+    const res = await axios<RelayerSubmitResponse>({
         method: "POST",
         url: `${relayerUrl}/submit`,
         data: relayerInput,
     });
+    const id = res.data.id;
+    console.log(`Request ID: ${id}`);
 
     try {
         const emailAuthMsg = await checkStatus(relayerUrl, id, timeout);

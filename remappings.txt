@@ -1,2 +1,0 @@
-@openzeppelin/=node_modules/@openzeppelin/
-@zk-email/=node_modules/@zk-email/

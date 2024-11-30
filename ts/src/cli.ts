@@ -49,7 +49,7 @@ const args = program.opts();
             args.accountCode as `0x${string}`,
             args.emailAddr,
             args.ownerAddr as `0x${string}`,
-            args.templateIdx as CommandTypes,
+            Number(args.templateIdx) as CommandTypes,
             args.commandValue,
             args.subject,
             args.body,
