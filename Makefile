@@ -1,8 +1,8 @@
 JQ := jq -r
 
-EMIT_EMAIL_COMMAND_ADDRESS := $(shell $(JQ) '.transactions[] | select(.contractName == "EmitEmailCommand") | .contractAddress' ./broadcast/DeployEmitEmailCommand.s.sol/11155111/run-latest.json)
-DKIM_ADDRESS := $(shell $(JQ) '.transactions[] | select(.contractName == "ECDSAOwnedDKIMRegistry") | .contractAddress' ./broadcast/DeployEmitEmailCommand.s.sol/11155111/run-latest.json)
-DKIM_PROXY_ADDRESS := $(shell $(JQ) '.transactions[] | select(.contractName == "ERC1967Proxy") | .contractAddress' ./broadcast/DeployEmitEmailCommand.s.sol/11155111/run-latest.json | head -n 1)
+EMIT_EMAIL_COMMAND_ADDRESS := $(shell $(JQ) '.transactions[] | select(.contractName == "EmitEmailCommand") | .contractAddress' ./broadcast/DeployEmitEmailCommand.s.sol/84532/run-latest.json)
+DKIM_ADDRESS := $(shell $(JQ) '.transactions[] | select(.contractName == "UserOverrideableDKIMRegistry") | .contractAddress' ./broadcast/DeployEmitEmailCommand.s.sol/84532/run-latest.json)
+DKIM_PROXY_ADDRESS := $(shell $(JQ) '.transactions[] | select(.contractName == "ERC1967Proxy") | .contractAddress' ./broadcast/DeployEmitEmailCommand.s.sol/84532/run-latest.json | head -n 1)
 
 # Check if addresses are empty
 ifeq ($(EMIT_EMAIL_COMMAND_ADDRESS),)
@@ -14,10 +14,10 @@ $(error DKIM Proxy address not found in the deployment file)
 endif
 
 # Other variables
-ACCOUNT_CODE := 0x22a2d51a892f866cf3c6cc4e138ba87a8a5059a1d80dea5b8ee8232034a105b7
+ACCOUNT_CODE := 0x1162ebff40918afe5305e68396f0283eb675901d0387f97d21928d423aaa0b10
 SUBJECT := "Hello World"
 BODY := "Sending a hello world!"
-CHAIN := sepolia
+# CHAIN := sepolia
 
 # Check if EMAIL is provided 
 ifeq ($(MAKECMDGOALS),submit)
@@ -27,93 +27,93 @@ endif
 endif
 
 # Function ABI
-FUNCTION_ABI := { \
-    "type": "function", \
-    "name": "emitEmailCommand", \
-    "inputs": [ \
-        { \
-            "name": "emailAuthMsg", \
-            "type": "tuple", \
-            "internalType": "struct EmailAuthMsg", \
-            "components": [ \
-                { \
-                    "name": "templateId", \
-                    "type": "uint256", \
-                    "internalType": "uint256" \
-                }, \
-                { \
-                    "name": "commandParams", \
-                    "type": "bytes[]", \
-                    "internalType": "bytes[]" \
-                }, \
-                { \
-                    "name": "skippedCommandPrefix", \
-                    "type": "uint256", \
-                    "internalType": "uint256" \
-                }, \
-                { \
-                    "name": "proof", \
-                    "type": "tuple", \
-                    "internalType": "struct EmailProof", \
-                    "components": [ \
-                        { \
-                            "name": "domainName", \
-                            "type": "string", \
-                            "internalType": "string" \
-                        }, \
-                        { \
-                            "name": "publicKeyHash", \
-                            "type": "bytes32", \
-                            "internalType": "bytes32" \
-                        }, \
-                        { \
-                            "name": "timestamp", \
-                            "type": "uint256", \
-                            "internalType": "uint256" \
-                        }, \
-                        { \
-                            "name": "maskedCommand", \
-                            "type": "string", \
-                            "internalType": "string" \
-                        }, \
-                        { \
-                            "name": "emailNullifier", \
-                            "type": "bytes32", \
-                            "internalType": "bytes32" \
-                        }, \
-                        { \
-                            "name": "accountSalt", \
-                            "type": "bytes32", \
-                            "internalType": "bytes32" \
-                        }, \
-                        { \
-                            "name": "isCodeExist", \
-                            "type": "bool", \
-                            "internalType": "bool" \
-                        }, \
-                        { \
-                            "name": "proof", \
-                            "type": "bytes", \
-                            "internalType": "bytes" \
-                        } \
-                    ] \
-                } \
-            ] \
-        }, \
-        { \
-            "name": "owner", \
-            "type": "address", \
-            "internalType": "address" \
-        }, \
-        { \
-            "name": "templateIdx", \
-            "type": "uint256", \
-            "internalType": "uint256" \
-        } \
-    ], \
-    "outputs": [], \
-    "stateMutability": "nonpayable" \
-}
+# FUNCTION_ABI := { \
+#     "type": "function", \
+#     "name": "emitEmailCommand", \
+#     "inputs": [ \
+#         { \
+#             "name": "emailAuthMsg", \
+#             "type": "tuple", \
+#             "internalType": "struct EmailAuthMsg", \
+#             "components": [ \
+#                 { \
+#                     "name": "templateId", \
+#                     "type": "uint256", \
+#                     "internalType": "uint256" \
+#                 }, \
+#                 { \
+#                     "name": "commandParams", \
+#                     "type": "bytes[]", \
+#                     "internalType": "bytes[]" \
+#                 }, \
+#                 { \
+#                     "name": "skippedCommandPrefix", \
+#                     "type": "uint256", \
+#                     "internalType": "uint256" \
+#                 }, \
+#                 { \
+#                     "name": "proof", \
+#                     "type": "tuple", \
+#                     "internalType": "struct EmailProof", \
+#                     "components": [ \
+#                         { \
+#                             "name": "domainName", \
+#                             "type": "string", \
+#                             "internalType": "string" \
+#                         }, \
+#                         { \
+#                             "name": "publicKeyHash", \
+#                             "type": "bytes32", \
+#                             "internalType": "bytes32" \
+#                         }, \
+#                         { \
+#                             "name": "timestamp", \
+#                             "type": "uint256", \
+#                             "internalType": "uint256" \
+#                         }, \
+#                         { \
+#                             "name": "maskedCommand", \
+#                             "type": "string", \
+#                             "internalType": "string" \
+#                         }, \
+#                         { \
+#                             "name": "emailNullifier", \
+#                             "type": "bytes32", \
+#                             "internalType": "bytes32" \
+#                         }, \
+#                         { \
+#                             "name": "accountSalt", \
+#                             "type": "bytes32", \
+#                             "internalType": "bytes32" \
+#                         }, \
+#                         { \
+#                             "name": "isCodeExist", \
+#                             "type": "bool", \
+#                             "internalType": "bool" \
+#                         }, \
+#                         { \
+#                             "name": "proof", \
+#                             "type": "bytes", \
+#                             "internalType": "bytes" \
+#                         } \
+#                     ] \
+#                 } \
+#             ] \
+#         }, \
+#         { \
+#             "name": "owner", \
+#             "type": "address", \
+#             "internalType": "address" \
+#         }, \
+#         { \
+#             "name": "templateIdx", \
+#             "type": "uint256", \
+#             "internalType": "uint256" \
+#         } \
+#     ], \
+#     "outputs": [], \
+#     "stateMutability": "nonpayable" \
+# }
 
 # Debug flag
 DEBUG ?= 0

@@ -171,7 +171,7 @@ async function buildRelayerInput(
  */
 const checkStatus = async (id: string, timeout: number): Promise<EmailAuthMsg> => {
     const startTime = Date.now();
-
+    console.log("Waiting for the user's reply...");
     while (Date.now() - startTime < timeout) {
         try {
             const res = await axios<RelayerStatusResponse>({
