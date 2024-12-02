@@ -3,18 +3,14 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
 
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@zk-email/ether-email-auth-contracts/src/utils/Verifier.sol";
 import "@zk-email/ether-email-auth-contracts/src/utils/Groth16Verifier.sol";
-import "@zk-email/ether-email-auth-contracts/src/utils/ECDSAOwnedDKIMRegistry.sol";
 import "@zk-email/contracts/UserOverrideableDKIMRegistry.sol";
 import "@zk-email/ether-email-auth-contracts/src/EmailAuth.sol";
 import "../src/EmitEmailCommand.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract Deploy is Script {
-    using ECDSA for *;
-
     UserOverrideableDKIMRegistry dkimImpl;
     UserOverrideableDKIMRegistry dkim;
     Verifier verifierImpl;
@@ -35,7 +31,6 @@ contract Deploy is Script {
         }
         uint256 timeDelay = vm.envOr("DKIM_DELAY", uint256(0));
         console.log("DKIM_DELAY: %s", timeDelay);
-
         vm.startBroadcast(deployerPrivateKey);
         address initialOwner = vm.addr(deployerPrivateKey);
         console.log("Initial owner: %s", vm.toString(initialOwner));
@@ -57,7 +52,6 @@ contract Deploy is Script {
                 address(dkim)
             );
         }
-
         // Deploy Verifier
         {
             verifierImpl = new Verifier();
@@ -76,7 +70,6 @@ contract Deploy is Script {
             verifier = Verifier(address(verifierProxy));
             console.log("Verifier deployed at: %s", address(verifier));
         }
-
         // Deploy EmailAuth Implementation
         {
             emailAuthImpl = new EmailAuth();
@@ -85,8 +78,7 @@ contract Deploy is Script {
                 address(emailAuthImpl)
             );
         }
-
-        // Deploy EmitEmailCommand
+        // // Deploy EmitEmailCommand
         {
             emitEmailCommand = new EmitEmailCommand(
                 address(verifier),

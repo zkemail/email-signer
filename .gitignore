@@ -2,11 +2,12 @@
 contracts/cache/
 contracts/out/
 contracts/artifacts/
-
+contracts/node_modules/
+contracts/yarn.lock
+contracts/broadcast/
 # Dotenv file
 .env
 
-# Dependencies
-node_modules/
-
 ts/dist/
+ts/node_modules/
+ts/yarn.lock
