@@ -39,6 +39,14 @@ const account = privateKeyToAccount(privateKey);
 
 type EmitEmailCommandContract = GetContractReturnType<typeof emitEmailCommandAbi, WalletClient>;
 
+/**
+ * Get the email auth address for the given account code, email address, and owner address
+ * @param emitEmailCommandContract the contract instance of EmitEmailCommand
+ * @param accountCode account code
+ * @param emailAddress email address
+ * @param ownerAddr owner address for the email auth contract
+ * @returns promise of the email auth address
+ */
 async function getEmailAuthAddress(emitEmailCommandContract: EmitEmailCommandContract, accountCode: string, emailAddress: string, ownerAddr: `0x${string}`): Promise<`0x${string}`> {
     const res = await axios<RelayerAccountSaltResponse>({
         method: "POST",
@@ -51,6 +59,12 @@ async function getEmailAuthAddress(emitEmailCommandContract: EmitEmailCommandCon
     return emitEmailCommandContract.read.computeEmailAuthAddress([ownerAddr, res.data.accountSalt]);
 }
 
+/**
+ * Fetch the command template and its ID for the given template index from the EmitEmailCommand contract
+ * @param emitEmailCommandContract  the contract instance of EmitEmailCommand
+ * @param templateIdx the index of the command template
+ * @returns promise of the command template and its ID
+ */
 async function fetchCommandTemplate(emitEmailCommandContract: EmitEmailCommandContract, templateIdx: number): Promise<{ commandTemplate: string, templateId: string }> {
     const commandTemplates = await emitEmailCommandContract.read.commandTemplates();
     const commandTemplate = commandTemplates[templateIdx].join(' ');
@@ -58,6 +72,12 @@ async function fetchCommandTemplate(emitEmailCommandContract: EmitEmailCommandCo
     return { commandTemplate, templateId: `0x${templateId.toString(16)}` };
 }
 
+/**
+ * Build the command parameters for the given template index and command value
+ * @param templateIdx the index of the command template
+ * @param commandValue the value of the command parameter
+ * @returns the command parameters
+ */
 function buildCommandParams(templateIdx: CommandTypes, commandValue: string): string[] {
     let commandParams: string[] = [];
     switch (templateIdx) {
@@ -95,6 +115,19 @@ function buildCommandParams(templateIdx: CommandTypes, commandValue: string): st
     return commandParams;
 }
 
+/**
+ * Build the input to submit the request to the relayer
+ * @param emitEmailCommandContract the contract instance of EmitEmailCommand
+ * @param dkimContractAddr DKIM contract address
+ * @param accountCode account code
+ * @param emailAddress email address
+ * @param ownerAddr owner address for the email auth contract
+ * @param templateIdx the index of the command template
+ * @param commandValue the value of the command parameter
+ * @param subject subject of the email
+ * @param body body of the email
+ * @returns promise of the relayer submit request
+ */
 async function buildRelayerInput(
     emitEmailCommandContract: EmitEmailCommandContract,
     dkimContractAddr: `0x${string}`,
@@ -130,7 +163,13 @@ async function buildRelayerInput(
     };
 }
 
-const checkStatus = async (relayerUrl: string, id: string, timeout: number = 30000): Promise<EmailAuthMsg> => {
+/**
+ * Check the status of the request with the given ID
+ * @param id request ID
+ * @param timeout timeout in milliseconds
+ * @returns promise of the email auth message returned by the relayer
+ */
+const checkStatus = async (id: string, timeout: number): Promise<EmailAuthMsg> => {
     const startTime = Date.now();
 
     while (Date.now() - startTime < timeout) {
@@ -152,6 +191,19 @@ const checkStatus = async (relayerUrl: string, id: string, timeout: number = 300
     throw new Error("Timeout");
 };
 
+/**
+ * Emit a command on-chain via email
+ * @param emitEmailCommandAddr  the address of the EmitEmailCommand contract
+ * @param accountCode account code
+ * @param emailAddress email address
+ * @param ownerAddr owner address for the email auth contract
+ * @param templateIdx the index of the command template
+ * @param commandValue the value of the command parameter
+ * @param subject subject of the email
+ * @param body body of the email
+ * @param timeout timeout in milliseconds
+ * @returns 
+ */
 export async function emitCommandViaEmail(
     emitEmailCommandAddr: `0x${string}`,
     accountCode: string,
@@ -183,7 +235,7 @@ export async function emitCommandViaEmail(
     console.log(`Request ID: ${id}`);
 
     try {
-        const emailAuthMsg = await checkStatus(relayerUrl, id, timeout);
+        const emailAuthMsg = await checkStatus(id, timeout);
         const hash = emitEmailCommandContract.write.emitEmailCommand([emailAuthMsg, ownerAddr, BigInt(templateIdx)], {
             account
         });
