@@ -13,6 +13,9 @@ contract EmailSigner is Initializable {
     address public emailAuthImplementation;
     address public emailAuthAddr;
 
+    // bytes4(keccak256("isValidSignature(bytes32,bytes)")
+    bytes4 internal constant MAGICVALUE = 0x1626ba7e;
+
     event SignHashCommand(bytes32 indexed hash);
 
     /// @notice Mapping to track if a hash has been signed by an email command.
@@ -50,6 +53,21 @@ contract EmailSigner is Initializable {
         bytes32 _hash = abi.decode(emailAuthMsg.commandParams[0], (bytes32));
         isHashSigned[_hash] = true;
         emit SignHashCommand(_hash);
+    }
+
+    /// Returns whether the hash has been signed via email command
+    /// MUST NOT modify state (using STATICCALL for solc < 0.5, view modifier for solc > 0.5)
+    /// MUST allow external calls
+    /// @param _hash Hash of the data to be signed
+    /// @return magicValue The bytes4 magic value 0x1626ba7e when function passes.
+    function isValidSignature(
+        bytes32 _hash,
+        bytes memory
+    ) public view returns (bytes4 magicValue) {
+        if (isHashSigned[_hash]) {
+            return MAGICVALUE;
+        }
+        return bytes4(0);
     }
 
     /// @notice Calculates a unique command template ID for template provided by this contract.

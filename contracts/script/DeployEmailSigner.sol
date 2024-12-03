@@ -40,18 +40,14 @@ contract Deploy is Script {
         // If on Base Sepolia, use existing contracts
         if (block.chainid == 84532) {
             dkim = UserOverrideableDKIMRegistry(
-                0x2b591297CFBec577cC92c23B0cd185e374EFa433
+                0x640747442f4895A14164eC756Da029214Eec2815
             );
-            verifier = Verifier(0xBE96F0adc44bB27490b85a8e00E943E5d55586F2);
+            verifier = Verifier(0xA82c585350855b72A48B59F40B0dAeeb85e2AB9A);
             emailAuthImpl = EmailAuth(
-                0x94428AFf957b38fd622D6Ae9F0824f6f8A629F4e
+                0x753FDb34e7868bC1e4729f35EFB24bcEF92DeAbd
             );
             emailSignerImpl = EmailSigner(
-                0x31f36f339BBaBfCb935163Fe6A7D61A5569ed706
-            );
-            console.log(
-                "EmailSigner implementation deployed at: %s",
-                address(emailSignerImpl)
+                0x8641848C773Ee703003BaE9c7b2D27014c62B4B0
             );
 
             // Only deploy EmailSignerFactory since it's not deployed yet

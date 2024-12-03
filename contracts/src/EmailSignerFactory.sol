@@ -24,19 +24,53 @@ contract EmailSignerFactory {
         emailSignerImplementation = _emailSignerImplementationAddr;
     }
 
+    /// @notice Get the deterministic address where an EmailSigner contract will be deployed
+    /// @param _accountSalt Salt value used to generate deterministic address
+    /// @return address The computed address where EmailSigner will be deployed
+    function getEmailSignerAddress(
+        bytes32 _accountSalt
+    ) public view returns (address) {
+        return
+            Create2.computeAddress(
+                _accountSalt,
+                keccak256(
+                    abi.encodePacked(
+                        type(ERC1967Proxy).creationCode,
+                        abi.encode(
+                            emailSignerImplementation,
+                            _getInitializeData(_accountSalt)
+                        )
+                    )
+                )
+            );
+    }
+
+    /// @notice Deploy a new EmailSigner contract at a deterministic address
+    /// @param _accountSalt Salt value used to generate deterministic address
+    /// @return address The address where the EmailSigner contract was deployed
+    /// @dev Uses CREATE2 to deploy an ERC1967 proxy pointing to the EmailSigner implementation
     function deployEmailSigner(
         bytes32 _accountSalt
     ) external returns (address) {
-        // deterministically deploy email signer
         return
             address(
                 new ERC1967Proxy{salt: _accountSalt}(
                     emailSignerImplementation,
-                    abi.encodeCall(
-                        EmailSigner.initialize,
-                        (verifier, dkim, emailAuthImplementation, _accountSalt)
-                    )
+                    _getInitializeData(_accountSalt)
                 )
+            );
+    }
+
+    /// @notice Internal helper function to get initialization data for EmailSigner contract
+    /// @param _accountSalt Salt value used to generate deterministic address
+    /// @return bytes Encoded initialization data for EmailSigner contract
+    function _getInitializeData(
+        bytes32 _accountSalt
+    ) internal view returns (bytes memory) {
+        return
+            abi.encodeCall(
+                EmailSigner.initialize,
+                (verifier, dkim, emailAuthImplementation, _accountSalt)
             );
     }
 }
