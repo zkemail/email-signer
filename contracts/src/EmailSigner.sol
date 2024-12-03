@@ -12,10 +12,10 @@ contract EmailSigner {
     address public emailAuthImplementation;
     address public emailAuthAddr;
 
-    event SignHashCommand(address indexed emailAuthAddr, bytes32 indexed hash);
+    event SignHashCommand(bytes32 indexed hash);
 
     /// @notice Mapping to track if a hash has been signed by an email command.
-    mapping(address => mapping(bytes32 => bool)) public isHashSigned;
+    mapping(bytes32 => bool) public isHashSigned;
 
     constructor(
         address _verifierAddr,
@@ -31,19 +31,24 @@ contract EmailSigner {
 
     /// @notice Signs a hash using the email command
     function esign(EmailAuthMsg memory emailAuthMsg) public {
-        EmailAuth emailAuth = EmailAuth(emailAuthAddr);
+        // check if sender authorized the correct template
         uint256 templateId = computeTemplateId(0);
-
         require(templateId == emailAuthMsg.templateId, "invalid template id");
+
+        // check if sender is the correct account
+        EmailAuth emailAuth = EmailAuth(emailAuthAddr);
         require(
             emailAuth.accountSalt() == emailAuthMsg.proof.accountSalt,
             "invalid account salt"
         );
 
+        // check zk proof
         emailAuth.authEmail(emailAuthMsg);
 
+        // record signed hash
         bytes32 _hash = abi.decode(emailAuthMsg.commandParams[0], (bytes32));
-        emit SignHashCommand(emailAuthAddr, _hash);
+        isHashSigned[_hash] = true;
+        emit SignHashCommand(_hash);
     }
 
     /// @notice Calculates a unique command template ID for template provided by this contract.
@@ -77,6 +82,7 @@ contract EmailSigner {
         string[] memory signHashTemplate = new string[](2);
         signHashTemplate[0] = "signHash";
         signHashTemplate[1] = "{uint}";
+
         emailAuth.insertCommandTemplate(computeTemplateId(0), signHashTemplate);
         return address(proxy);
     }
