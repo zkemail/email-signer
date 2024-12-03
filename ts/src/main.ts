@@ -1,5 +1,5 @@
 require("dotenv").config();
-import { emitEmailCommandAbi } from "./generated";
+import { emailSignerAbi, emailSignerFactoryAbi } from "./generated";
 import {
     getContract,
     createWalletClient,
@@ -37,17 +37,15 @@ const walletClient = createWalletClient({
 
 const account = privateKeyToAccount(privateKey);
 
-type EmitEmailCommandContract = GetContractReturnType<typeof emitEmailCommandAbi, WalletClient>;
+type EmailSignerFactoryContract = GetContractReturnType<typeof emailSignerFactoryAbi, WalletClient>;
 
 /**
- * Get the email auth address for the given account code, email address, and owner address
- * @param emitEmailCommandContract the contract instance of EmitEmailCommand
+ * Get the account salt for the given account code and email address
  * @param accountCode account code
  * @param emailAddress email address
- * @param ownerAddr owner address for the email auth contract
- * @returns promise of the email auth address
+ * @returns the account salt
  */
-async function getEmailAuthAddress(emitEmailCommandContract: EmitEmailCommandContract, accountCode: string, emailAddress: string, ownerAddr: `0x${string}`): Promise<`0x${string}`> {
+async function getAccountSalt(accountCode: string, emailAddress: string): Promise<`0x${string}`> {
     const res = await axios<RelayerAccountSaltResponse>({
         method: "POST",
         url: `${relayerUrl}/accountSalt`,
@@ -56,64 +54,9 @@ async function getEmailAuthAddress(emitEmailCommandContract: EmitEmailCommandCon
             emailAddress: emailAddress,
         },
     });
-    return emitEmailCommandContract.read.computeEmailAuthAddress([ownerAddr, res.data.accountSalt]);
+    return res.data.accountSalt;
 }
 
-/**
- * Fetch the command template and its ID for the given template index from the EmitEmailCommand contract
- * @param emitEmailCommandContract  the contract instance of EmitEmailCommand
- * @param templateIdx the index of the command template
- * @returns promise of the command template and its ID
- */
-async function fetchCommandTemplate(emitEmailCommandContract: EmitEmailCommandContract, templateIdx: number): Promise<{ commandTemplate: string, templateId: string }> {
-    const commandTemplates = await emitEmailCommandContract.read.commandTemplates();
-    const commandTemplate = commandTemplates[templateIdx].join(' ');
-    const templateId = await emitEmailCommandContract.read.computeTemplateId([BigInt(templateIdx)]);
-    return { commandTemplate, templateId: `0x${templateId.toString(16)}` };
-}
-
-/**
- * Build the command parameters for the given template index and command value
- * @param templateIdx the index of the command template
- * @param commandValue the value of the command parameter
- * @returns the command parameters
- */
-function buildCommandParams(templateIdx: CommandTypes, commandValue: string): string[] {
-    let commandParams: string[] = [];
-    switch (templateIdx) {
-        case CommandTypes.String:
-            commandParams.push(commandValue as string);
-            break;
-        case CommandTypes.Uint:
-            const uintValue = Number(commandValue);
-            if (Number.isInteger(uintValue) === false) {
-                throw new Error('Uint value must be an integer');
-            }
-            if (uintValue < 0) {
-                throw new Error('Uint value must be greater than or equal to 0');
-            }
-            commandParams.push(commandValue);
-            break;
-        case CommandTypes.Int:
-            const intValue = Number(commandValue);
-            if (Number.isInteger(intValue) === false) {
-                throw new Error('Int value must be an integer');
-            }
-            commandParams.push(commandValue);
-            break;
-        case CommandTypes.Decimals:
-            // [TODO] Assert the format of the given value
-            commandParams.push(commandValue);
-            break;
-        case CommandTypes.EthAddr:
-            // [TODO] Assert the format of the given value
-            commandParams.push(commandValue as string);
-            break;
-        default:
-            throw new Error('Unsupported command type');
-    }
-    return commandParams;
-}
 
 /**
  * Build the input to submit the request to the relayer
@@ -121,34 +64,46 @@ function buildCommandParams(templateIdx: CommandTypes, commandValue: string): st
  * @param dkimContractAddr DKIM contract address
  * @param accountCode account code
  * @param emailAddress email address
- * @param ownerAddr owner address for the email auth contract
- * @param templateIdx the index of the command template
- * @param commandValue the value of the command parameter
- * @param subject subject of the email
- * @param body body of the email
+ * @param hash the hash to sign
  * @returns promise of the relayer submit request
  */
 async function buildRelayerInput(
-    emitEmailCommandContract: EmitEmailCommandContract,
+    emailSignerFactoryContract: EmailSignerFactoryContract,
     dkimContractAddr: `0x${string}`,
     accountCode: string,
     emailAddress: string,
-    ownerAddr: `0x${string}`,
-    templateIdx: CommandTypes,
-    commandValue: string,
-    subject: string,
-    body: string
+    hash: string,
 ): Promise<RelayerSubmitRequest> {
-    const emailAuthAddr = await getEmailAuthAddress(emitEmailCommandContract, accountCode, emailAddress, ownerAddr);
-    console.log(`Email Auth Address: ${emailAuthAddr}`);
-    const emailAuthCode = await publicClient.getCode({
-        address: emailAuthAddr
+    const accountSalt = await getAccountSalt(accountCode, emailAddress);
+    console.log(`Account Salt: ${accountSalt}`);
+
+    let emailSignerAddr = await emailSignerFactoryContract.read.getEmailSignerAddress([accountSalt]);
+    console.log(`Email Signer Address: ${emailSignerAddr}`);
+
+    let emailSignerCode = await publicClient.getCode({
+        address: emailSignerAddr
     });
-    console.log(`Email Auth Code: ${emailAuthCode}`);
-    const codeExistsInEmail = emailAuthCode === undefined;
+    console.log(`Email Signer Code: ${emailSignerCode}`);
+    const codeExistsInEmail = emailSignerCode === undefined;
+    if (codeExistsInEmail) {
+        console.log("Deploying email signer...");
+        // deploy email signer
+        await emailSignerFactoryContract.write.deployEmailSigner([accountSalt], {
+            account,
+            chain: publicClient.chain
+        });
+        // make sure the email signer is deployed
+        emailSignerCode = await publicClient.getCode({
+            address: emailSignerAddr
+        });
+        console.log(`Email Signer Deployed: ${emailSignerCode}`);
+    }
     console.log(`Code Exists in Email: ${codeExistsInEmail}`);
-    const { commandTemplate, templateId } = await fetchCommandTemplate(emitEmailCommandContract, templateIdx);
-    const commandParams = buildCommandParams(templateIdx, commandValue);
+    const { commandTemplate, templateId } = {
+        commandTemplate: "signHash {uint}",
+        templateId: "0x1bd88348ccb7396aa7a29d6f7107c793b5b24b8cec1ccfdd9de3f1d61ab6c1dd"
+    };
+    const commandParams = [hash];
     return {
         dkimContractAddress: dkimContractAddr,
         accountCode,
@@ -157,8 +112,8 @@ async function buildRelayerInput(
         commandParams,
         templateId: templateId.toString(),
         emailAddress,
-        subject,
-        body,
+        subject: "Signature request",
+        body: "Please sign the following hash: " + hash,
         chain: "baseSepolia"
     };
 }
@@ -191,40 +146,24 @@ const checkStatus = async (id: string, timeout: number): Promise<EmailAuthMsg> =
     throw new Error("Timeout");
 };
 
-/**
- * Emit a command on-chain via email
- * @param emitEmailCommandAddr  the address of the EmitEmailCommand contract
- * @param accountCode account code
- * @param emailAddress email address
- * @param ownerAddr owner address for the email auth contract
- * @param templateIdx the index of the command template
- * @param commandValue the value of the command parameter
- * @param subject subject of the email
- * @param body body of the email
- * @param timeout timeout in milliseconds
- * @returns 
- */
-export async function emitCommandViaEmail(
-    emitEmailCommandAddr: `0x${string}`,
+
+export async function signHash(
     accountCode: string,
     emailAddress: string,
-    ownerAddr: `0x${string}`,
-    templateIdx: CommandTypes,
-    commandValue: string,
-    subject: string,
-    body: string,
+    hash: string,
     timeout: number = 120000
 ): Promise<`0x${string}`> {
-    const emitEmailCommandContract = getContract({
-        address: emitEmailCommandAddr,
-        abi: emitEmailCommandAbi,
+    const emailSignerFactory = getContract({
+        address: "0xe171c21a96daA2a818850af3ac28AB2B1d508dA1",
+        abi: emailSignerFactoryAbi,
         client: {
             public: publicClient,
             wallet: walletClient,
         }
     });
-    const dkimContractAddr = await emitEmailCommandContract.read.dkimAddr();
-    const relayerInput = await buildRelayerInput(emitEmailCommandContract, dkimContractAddr, accountCode, emailAddress, ownerAddr, templateIdx, commandValue, subject, body);
+    const dkimContractAddr = await emailSignerFactory.read.dkim();
+
+    const relayerInput = await buildRelayerInput(emailSignerFactory, dkimContractAddr, accountCode, emailAddress, hash);
     console.log(`Relayer Input: ${JSON.stringify(relayerInput)}`);
     const res = await axios<RelayerSubmitResponse>({
         method: "POST",
@@ -234,9 +173,20 @@ export async function emitCommandViaEmail(
     const id = res.data.id;
     console.log(`Request ID: ${id}`);
 
+
+    const emailAuthMsg = await checkStatus(id, timeout);
+
+    const emailSigner = getContract({
+        address: await emailSignerFactory.read.getEmailSignerAddress([emailAuthMsg.proof.accountSalt]),
+        abi: emailSignerAbi,
+        client: {
+            public: publicClient,
+            wallet: walletClient,
+        }
+    });
+
     try {
-        const emailAuthMsg = await checkStatus(id, timeout);
-        const hash = emitEmailCommandContract.write.emitEmailCommand([emailAuthMsg, ownerAddr, BigInt(templateIdx)], {
+        const hash = await emailSigner.write.esign([emailAuthMsg], {
             account
         });
         return hash;
