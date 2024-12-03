@@ -39,15 +39,8 @@ contract EmailSigner is Initializable {
         uint256 templateId = computeTemplateId(0);
         require(templateId == emailAuthMsg.templateId, "invalid template id");
 
-        // check if sender is the correct account
-        IEmailAuth emailAuth = IEmailAuth(emailAuthAddr);
-        require(
-            emailAuth.accountSalt() == emailAuthMsg.proof.accountSalt,
-            "invalid account salt"
-        );
-
-        // check zk proof
-        emailAuth.authEmail(emailAuthMsg);
+        // check zk proof and account salt
+        IEmailAuth(emailAuthAddr).authEmail(emailAuthMsg);
 
         // record signed hash
         bytes32 _hash = abi.decode(emailAuthMsg.commandParams[0], (bytes32));
