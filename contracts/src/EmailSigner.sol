@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-import "@zk-email/ether-email-auth-contracts/src/EmailAuth.sol";
+import "./interfaces/IEmailAuth.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /// @title EIP-1271 compliant smart contract signing via email commands
-contract EmailSigner {
+contract EmailSigner is Initializable {
     address public verifier;
     address public dkim;
     address public emailAuthImplementation;
@@ -17,12 +18,12 @@ contract EmailSigner {
     /// @notice Mapping to track if a hash has been signed by an email command.
     mapping(bytes32 => bool) public isHashSigned;
 
-    constructor(
+    function initialize(
         address _verifierAddr,
         address _dkimAddr,
         address _emailAuthImplementationAddr,
         bytes32 _accountSalt
-    ) {
+    ) public initializer {
         verifier = _verifierAddr;
         dkim = _dkimAddr;
         emailAuthImplementation = _emailAuthImplementationAddr;
@@ -30,13 +31,13 @@ contract EmailSigner {
     }
 
     /// @notice Signs a hash using the email command
-    function esign(EmailAuthMsg memory emailAuthMsg) public {
+    function esign(IEmailAuth.EmailAuthMsg memory emailAuthMsg) public {
         // check if sender authorized the correct template
         uint256 templateId = computeTemplateId(0);
         require(templateId == emailAuthMsg.templateId, "invalid template id");
 
         // check if sender is the correct account
-        EmailAuth emailAuth = EmailAuth(emailAuthAddr);
+        IEmailAuth emailAuth = IEmailAuth(emailAuthAddr);
         require(
             emailAuth.accountSalt() == emailAuthMsg.proof.accountSalt,
             "invalid account salt"
@@ -70,12 +71,12 @@ contract EmailSigner {
         ERC1967Proxy proxy = new ERC1967Proxy(
             emailAuthImplementation,
             abi.encodeCall(
-                EmailAuth.initialize,
+                IEmailAuth.initialize,
                 (address(this), accountSalt, address(this))
             )
         );
 
-        EmailAuth emailAuth = EmailAuth(address(proxy));
+        IEmailAuth emailAuth = IEmailAuth(address(proxy));
         emailAuth.initDKIMRegistry(dkim);
         emailAuth.initVerifier(verifier);
 
