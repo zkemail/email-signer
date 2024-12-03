@@ -11,3 +11,11 @@ contracts/broadcast/
 ts/dist/
 ts/node_modules/
 ts/yarn.lock
+
+
+ts/.env
+node_modules/
+cache/
+out/
+
+lib/
