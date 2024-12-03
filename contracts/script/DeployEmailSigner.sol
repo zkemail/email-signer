@@ -7,7 +7,7 @@ import "@zk-email/ether-email-auth-contracts/src/utils/Verifier.sol";
 import "@zk-email/ether-email-auth-contracts/src/utils/Groth16Verifier.sol";
 import "@zk-email/contracts/UserOverrideableDKIMRegistry.sol";
 import "@zk-email/ether-email-auth-contracts/src/EmailAuth.sol";
-import "../src/EmitEmailCommand.sol";
+import "../src/EmailSigner.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract Deploy is Script {
@@ -16,7 +16,7 @@ contract Deploy is Script {
     Verifier verifierImpl;
     Verifier verifier;
     EmailAuth emailAuthImpl;
-    EmitEmailCommand emitEmailCommand;
+    EmailSigner emailSigner;
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -80,15 +80,13 @@ contract Deploy is Script {
         }
         // // Deploy EmitEmailCommand
         {
-            emitEmailCommand = new EmitEmailCommand(
+            emailSigner = new EmailSigner(
                 address(verifier),
                 address(dkim),
-                address(emailAuthImpl)
+                address(emailAuthImpl),
+                bytes32(0)
             );
-            console.log(
-                "EmitEmailCommand deployed at: %s",
-                address(emitEmailCommand)
-            );
+            console.log("EmailSigner deployed at: %s", address(emailSigner));
         }
         vm.stopBroadcast();
     }
