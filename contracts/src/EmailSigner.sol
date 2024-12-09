@@ -54,7 +54,7 @@ contract EmailSigner is Initializable {
     /// MUST NOT modify state (using STATICCALL for solc < 0.5, view modifier for solc > 0.5)
     /// MUST allow external calls
     /// @param _hash Hash of the data to be signed
-    /// @return magicValue The bytes4 magic value 0x1626ba7e when function passes.
+    /// @return magicValue The bytes4 magic value 0x20c13b0b when function passes.
     function isValidSignature(
         bytes32 _hash,
         bytes memory

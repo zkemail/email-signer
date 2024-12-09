@@ -31,7 +31,7 @@ contract SafeSigner is EmailSigner {
     /// @notice Combines email signing and Safe hash approval in a single transaction
     /// @param emailAuthMsg The email authentication message
     /// @param safe The address of the Safe contract
-    /// @dev This is a convenience function that calls esign() and approveHash()
+    /// @dev This is a convenience function that calls esign() and approveSafeHash()
     function esignAndApproveHash(
         IEmailAuth.EmailAuthMsg memory emailAuthMsg,
         address safe
