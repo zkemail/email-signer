@@ -13,7 +13,7 @@ contract SafeSigner is EmailSigner {
     /// @param safe The address of the Safe contract
     /// @param hashToApprove The hash to be approved
     /// @dev This function can only be called if the hash was previously signed via email
-    function approveSafeHash(address safe, bytes32 hashToApprove) public {
+    function approveHash(address safe, bytes32 hashToApprove) public {
         // Check if the hash has been signed via email command
         require(isHashSigned[hashToApprove], "Hash not signed via email");
 
@@ -31,13 +31,13 @@ contract SafeSigner is EmailSigner {
     /// @notice Combines email signing and Safe hash approval in a single transaction
     /// @param emailAuthMsg The email authentication message
     /// @param safe The address of the Safe contract
-    /// @dev This is a convenience function that calls esign() and approveSafeHash()
+    /// @dev This is a convenience function that calls esign() and approveHash()
     function esignAndApproveHash(
         IEmailAuth.EmailAuthMsg memory emailAuthMsg,
         address safe
     ) external {
         bytes32 hash = esign(emailAuthMsg);
-        approveSafeHash(safe, hash);
+        approveHash(safe, hash);
     }
 
     /// @notice Returns the formatted signature bytes for use with Safe contracts

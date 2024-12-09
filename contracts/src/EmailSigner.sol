@@ -110,27 +110,4 @@ contract EmailSigner is Initializable {
         emailAuth.insertCommandTemplate(computeTemplateId(0), signHashTemplate);
         return address(proxy);
     }
-
-    /// *********************
-    /// DEVELOPMENT ONLY
-    /// *********************
-    function getSafeSignature(
-        address signer,
-        bytes memory data
-    ) external pure returns (bytes memory) {
-        // Combine all components:
-        // 1. r (contract address)
-        // 2. s (offset to signature data)
-        // 3. v (0 for contract signatures)
-        // 4. length of contract signature (32 bytes)
-        // 5. actual signature data
-        return
-            abi.encodePacked(
-                bytes32(uint256(uint160(signer))),
-                bytes32(uint256(65)),
-                uint8(0),
-                bytes32(data.length),
-                data
-            );
-    }
 }
