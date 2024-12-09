@@ -151,10 +151,11 @@ export async function signHash(
     accountCode: string,
     emailAddress: string,
     hash: string,
-    timeout: number = 120000
+    timeout: number = 120000,
+    factoryAddress: `0x${string}` = "0xD037DF323d2eFa777697C63DA36e3c4bFB455b0c"
 ): Promise<`0x${string}`> {
     const emailSignerFactory = getContract({
-        address: "0xe171c21a96daA2a818850af3ac28AB2B1d508dA1",
+        address: factoryAddress,
         abi: emailSignerFactoryAbi,
         client: {
             public: publicClient,
@@ -176,6 +177,8 @@ export async function signHash(
 
     const emailAuthMsg = await checkStatus(id, timeout);
 
+    console.log(`Email Auth Msg: ${JSON.stringify(emailAuthMsg)}`);
+
     const emailSigner = getContract({
         address: await emailSignerFactory.read.getEmailSignerAddress([emailAuthMsg.proof.accountSalt]),
         abi: emailSignerAbi,
@@ -189,6 +192,7 @@ export async function signHash(
         const hash = await emailSigner.write.esign([emailAuthMsg], {
             account
         });
+
         return hash;
     } catch (e) {
         throw new Error(`Failed to emit command via email: ${e}`);

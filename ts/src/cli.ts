@@ -26,7 +26,7 @@ const args = program.opts();
         const hash = await signHash(
             args.accountCode as `0x${string}`,
             args.emailAddr,
-            args.hash,
+            args.hash.startsWith('0x') ? BigInt(args.hash).toString() : args.hash,
             args.timeout
         );
         console.log(`Command emitted successfully with hash: ${hash}`);
