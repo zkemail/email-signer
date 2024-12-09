@@ -63,6 +63,16 @@ contract EmailSigner is Initializable {
         return bytes4(0);
     }
 
+    /// @notice Validates a signature for a give data by hashing it first
+    /// @dev This is a convenience function to allow EIP-1271 signatures to be used
+    /// with this contract.
+    function isValidSignature(
+        bytes memory _data,
+        bytes memory _signature
+    ) public view returns (bytes4 magicValue) {
+        return isValidSignature(keccak256(_data), _signature);
+    }
+
     /// @notice Calculates a unique command template ID for template provided by this contract.
     /// @dev Encodes the email account recovery version ID, "ESIGN", and the template index,
     /// then uses keccak256 to hash these values into a uint ID.
@@ -97,5 +107,28 @@ contract EmailSigner is Initializable {
 
         emailAuth.insertCommandTemplate(computeTemplateId(0), signHashTemplate);
         return address(proxy);
+    }
+
+    /// *********************
+    /// DEVELOPMENT ONLY
+    /// *********************
+    function getSafeSignature(
+        address signer,
+        bytes memory data
+    ) external pure returns (bytes memory) {
+        // Combine all components:
+        // 1. r (contract address)
+        // 2. s (offset to signature data)
+        // 3. v (0 for contract signatures)
+        // 4. length of contract signature (32 bytes)
+        // 5. actual signature data
+        return
+            abi.encodePacked(
+                bytes32(uint256(uint160(signer))),
+                bytes32(uint256(65)),
+                uint8(0),
+                bytes32(data.length),
+                data
+            );
     }
 }
