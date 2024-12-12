@@ -7,7 +7,7 @@ import "@zk-email/ether-email-auth-contracts/src/utils/Verifier.sol";
 import "@zk-email/ether-email-auth-contracts/src/utils/Groth16Verifier.sol";
 import "@zk-email/contracts/UserOverrideableDKIMRegistry.sol";
 import "@zk-email/ether-email-auth-contracts/src/EmailAuth.sol";
-import "../src/EmailSignerFactory.sol";
+import "../src/EmailSigner/EmailSignerFactory.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract Deploy is Script {
