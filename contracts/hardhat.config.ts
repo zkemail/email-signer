@@ -9,7 +9,7 @@ module.exports = {
   },
   paths: {
     sources: "./src",
-    tests: "./test/hardhat",
+    tests: "./test/e2e",
     cache: "./cache/hardhat",
     artifacts: "./artifacts/hardhat",
   },
