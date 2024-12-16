@@ -3,6 +3,10 @@ pragma solidity ^0.8.12;
 
 import "./EmailAccount.sol";
 import "@openzeppelin/contracts/utils/Create2.sol";
+import "@zk-email/ether-email-auth-contracts/src/utils/Verifier.sol";
+import "@zk-email/ether-email-auth-contracts/src/utils/Groth16Verifier.sol";
+import "@zk-email/contracts/UserOverrideableDKIMRegistry.sol";
+import "@zk-email/ether-email-auth-contracts/src/EmailAuth.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// @title Factory contract for deploying EmailAccount
@@ -12,6 +16,10 @@ contract EmailAccountFactory {
     address public emailAuthImplementation;
     address public emailAccountImplementation;
     address public entryPoint;
+
+    UserOverrideableDKIMRegistry dkimImpl;
+    Verifier verifierImpl;
+    EmailAuth emailAuthImpl;
 
     constructor(
         address _entryPoint,
