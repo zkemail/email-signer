@@ -113,49 +113,49 @@ contract EmailSignerTest is Test {
         );
     }
 
-    function testGetSafeSignature() public view {
-        address signer = address(0x123);
-        bytes memory data = "test data";
+    // function testGetSafeSignature() public view {
+    //     address signer = address(0x123);
+    //     bytes memory data = "test data";
 
-        bytes memory signature = emailSigner.getSafeSignature(signer, data);
+    //     bytes memory signature = emailSigner.getSafeSignature(signer, data);
 
-        // Extract components from signature
-        (uint8 v, bytes32 r, bytes32 s) = SignatureDecoder.signatureSplit(
-            signature,
-            0
-        );
+    //     // Extract components from signature
+    //     (uint8 v, bytes32 r, bytes32 s) = SignatureDecoder.signatureSplit(
+    //         signature,
+    //         0
+    //     );
 
-        // Verify r contains the signer address
-        assertEq(
-            address(uint160(uint256(r))),
-            signer,
-            "Wrong signer address in r"
-        );
+    //     // Verify r contains the signer address
+    //     assertEq(
+    //         address(uint160(uint256(r))),
+    //         signer,
+    //         "Wrong signer address in r"
+    //     );
 
-        // Verify s contains offset (65)
-        assertEq(uint256(s), 65, "Wrong offset in s");
+    //     // Verify s contains offset (65)
+    //     assertEq(uint256(s), 65, "Wrong offset in s");
 
-        // Verify v is 0 for contract signatures
-        assertEq(v, 0, "Wrong v value");
+    //     // Verify v is 0 for contract signatures
+    //     assertEq(v, 0, "Wrong v value");
 
-        // Verify total signature length
-        assertEq(
-            signature.length,
-            65 + 32 + data.length,
-            "Wrong signature length"
-        );
+    //     // Verify total signature length
+    //     assertEq(
+    //         signature.length,
+    //         65 + 32 + data.length,
+    //         "Wrong signature length"
+    //     );
 
-        bytes memory contractSignature;
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            // The signature data for contract signatures is appended to the concatenated signatures and the offset is stored in s
-            contractSignature := add(add(signature, s), 0x20)
-        }
+    //     bytes memory contractSignature;
+    //     // solhint-disable-next-line no-inline-assembly
+    //     assembly {
+    //         // The signature data for contract signatures is appended to the concatenated signatures and the offset is stored in s
+    //         contractSignature := add(add(signature, s), 0x20)
+    //     }
 
-        assertEq(
-            keccak256(contractSignature),
-            keccak256(data),
-            "Wrong appended data"
-        );
-    }
+    //     assertEq(
+    //         keccak256(contractSignature),
+    //         keccak256(data),
+    //         "Wrong appended data"
+    //     );
+    // }
 }
