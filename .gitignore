@@ -5,6 +5,8 @@ contracts/artifacts/
 contracts/node_modules/
 contracts/yarn.lock
 contracts/broadcast/
+contracts/typechain-types/
+
 # Dotenv file
 .env
 
