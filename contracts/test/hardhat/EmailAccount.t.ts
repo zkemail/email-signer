@@ -1,0 +1,4 @@
+describe("EmailAccount", () => {
+    it("setup", () => {
+    });
+});
