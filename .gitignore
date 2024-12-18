@@ -6,6 +6,8 @@ contracts/node_modules/
 contracts/yarn.lock
 contracts/broadcast/
 contracts/typechain-types/
+contracts/dev/config.json
+contracts/dev/.ic.pem
 
 # Dotenv file
 .env

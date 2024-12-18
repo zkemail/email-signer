@@ -1,0 +1,53 @@
+# Use the official Rust slim image as the base
+FROM rust:1.73-slim as builder
+
+# Use bash as the shell
+SHELL ["/bin/bash", "-c"]
+
+WORKDIR /relayer
+
+# Install minimal required dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    pkg-config \
+    libssl-dev \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install NVM, Node.js, and Yarn
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash \
+    && . $HOME/.nvm/nvm.sh \
+    && nvm install 18 \
+    && nvm use 18 \
+    && npm install -g yarn
+
+# Clone repository and build contracts
+RUN git clone --depth 1 https://github.com/zkemail/email-tx-builder.git . \
+    && . $HOME/.nvm/nvm.sh \
+    && cd packages/contracts \
+    && yarn install --frozen-lockfile \
+    && curl -L https://foundry.paradigm.xyz | bash \
+    && . $HOME/.bashrc \
+    && foundryup \
+    && forge build \
+    && cargo build --release
+
+RUN ls -la target/release/
+
+# Start with a clean slim image for runtime
+FROM debian:bullseye-slim
+
+WORKDIR /app
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy only necessary artifacts from builder
+COPY --from=builder /relayer/target/release/email-tx-builder-relayer /app/relayer
+COPY .ic.pem /app/
+COPY config.json /app/
+
+EXPOSE 4500

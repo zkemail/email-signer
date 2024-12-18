@@ -1,11 +1,22 @@
-# Use an official Node.js runtime as a parent image
-FROM node:18
+# Build stage
+FROM node:18-slim AS builder
 
 # Set the working directory in the container
 WORKDIR /app/bundler
 
-# Clone the bundler repository
-RUN git clone https://github.com/eth-infinitism/bundler.git .
+# Clone the bundler repository and install dependencies
+RUN apt-get update && apt-get install -y git \
+    && git clone https://github.com/eth-infinitism/bundler.git . \
+    && yarn && yarn preprocess \
+    && apt-get purge -y git \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
-RUN yarn && yarn preprocess
+# Runtime stage
+FROM node:18-slim
+
+WORKDIR /app/bundler
+
+# Copy only the necessary files from builder
+COPY --from=builder /app/bundler .
