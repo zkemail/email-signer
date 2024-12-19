@@ -12,6 +12,8 @@ describe("EmailAccount", () => {
     let dkim: UserOverrideableDKIMRegistry;
     let emailAuthImpl: EmailAuth;
     let salt = `0x${"0".repeat(64)}`;
+    let aggregator = "0x0000000000000000000000000000000000000000";
+
 
     let context: {
         provider: JsonRpcProvider;
@@ -108,7 +110,8 @@ describe("EmailAccount", () => {
             await verifier.getAddress(),
             await dkim.getAddress(),
             await emailAuthImpl.getAddress(),
-            await emailAccountImpl.getAddress()
+            await emailAccountImpl.getAddress(),
+            aggregator
         );
 
         // deploy a sample email account
