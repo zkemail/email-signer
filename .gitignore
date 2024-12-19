@@ -6,8 +6,10 @@ contracts/node_modules/
 contracts/yarn.lock
 contracts/broadcast/
 contracts/typechain-types/
-contracts/dev/config.json
-contracts/dev/.ic.pem
+
+# Docker env files
+docker/config.json
+docker/.ic.pem
 
 # Dotenv file
 .env
@@ -23,3 +25,4 @@ cache/
 out/
 
 lib/
+

@@ -34,15 +34,15 @@ RUN git clone --depth 1 https://github.com/zkemail/email-tx-builder.git . \
     && cargo build --release
 
 RUN ls -la target/release/
-
 # Start with a clean slim image for runtime
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 WORKDIR /app
 
 # Install runtime dependencies only
 RUN apt-get update && apt-get install -y \
-    libssl-dev \
+    libssl3 \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy only necessary artifacts from builder
@@ -51,3 +51,5 @@ COPY .ic.pem /app/
 COPY config.json /app/
 
 EXPOSE 4500
+
+CMD [ "/app/relayer" ]
