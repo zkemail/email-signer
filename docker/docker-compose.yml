@@ -69,22 +69,17 @@ services:
       context: .
       dockerfile: Dockerfile.imap
     environment:
-      - RELAYER_ENDPOINT=http://relayer:4500/api/receiveEmail
+      - RELAYER_ENDPOINT=http://host.docker.internal:8000/api/receiveEmail
       - IMAP_LOGIN_ID=${IMAP_LOGIN_ID}
       - IMAP_LOGIN_PASSWORD=${IMAP_LOGIN_PASSWORD}
       - IMAP_DOMAIN_NAME=${IMAP_DOMAIN_NAME}
       - IMAP_PORT=${IMAP_PORT}
       - AUTH_TYPE=${IMAP_AUTH_TYPE}
       - JSON_LOGGER=${IMAP_JSON_LOGGER}
-
-  relayer:
-    build:
-      context: .
-      dockerfile: Dockerfile.relayer
-    ports:
-      - 4500:4500
-    depends_on:
-      - db
+    networks:
+      - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
   postgres_data_dir:

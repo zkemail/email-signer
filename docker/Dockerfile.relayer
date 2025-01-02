@@ -31,6 +31,8 @@ RUN git clone --depth 1 https://github.com/zkemail/email-tx-builder.git . \
     && . $HOME/.bashrc \
     && foundryup \
     && forge build \
+    && cd ../relayer \
+    && cargo install sqlx-cli --locked \
     && cargo build --release
 
 RUN ls -la target/release/
@@ -39,14 +41,19 @@ FROM debian:bookworm-slim
 
 WORKDIR /app
 
-# Install runtime dependencies only
+# Install runtime dependencies including postgresql-client
 RUN apt-get update && apt-get install -y \
     libssl3 \
     ca-certificates \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
+
+# Copy sqlx-cli from builder
+COPY --from=builder /usr/local/cargo/bin/sqlx /usr/local/bin/sqlx
 
 # Copy only necessary artifacts from builder
 COPY --from=builder /relayer/target/release/email-tx-builder-relayer /app/relayer
+COPY --from=builder /relayer/packages/relayer/migrations /app/migrations
 COPY .ic.pem /app/
 COPY config.json /app/
 
