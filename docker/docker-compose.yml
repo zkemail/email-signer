@@ -1,9 +1,13 @@
 services:
   node:
-    image: ethereum/client-go:v1.13.5
+    build:
+      context: .
+      dockerfile: Dockerfile.node
     ports:
       - 8545:8545
-    command: [ "--miner.gaslimit", "12000000", "--http", "--http.api", "personal,eth,net,web3,debug", "--http.vhosts", "*,localhost,host.docker.internal", "--http.addr", "0.0.0.0", "--allow-insecure-unlock", "--rpc.allow-unprotected-txs", "--dev", "--verbosity", "2", "--nodiscover", "--maxpeers", "0", "--mine", "--networkid", "1337" ]
+    command: [ "anvil", "--host", "0.0.0.0", "--port", "8545" ]
+    networks:
+      - app-network
 
   bundler:
     build:
@@ -11,9 +15,11 @@ services:
       dockerfile: Dockerfile.bundler
     ports:
       - 3000:3000
-    command: [ "yarn", "run", "bundler", "--network", "http://node:8545" ]
+    command: [ "yarn", "run", "bundler", "--network", "http://node:8545", "--unsafe" ]
     depends_on:
       - node
+    networks:
+      - app-network
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:3000/" ]
       interval: 1m30s
@@ -82,3 +88,8 @@ services:
 
 volumes:
   postgres_data_dir:
+
+
+networks:
+  app-network:
+    driver: bridge

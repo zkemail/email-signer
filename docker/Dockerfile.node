@@ -1,0 +1,18 @@
+# Use a slim Node.js image as base
+FROM node:18-slim
+
+# Set the working directory in the container
+WORKDIR /app/node
+
+# Install curl and foundry, then cleanup in same layer
+RUN apt-get update && \
+    apt-get install -y curl git && \
+    curl -L https://foundry.paradigm.xyz | bash && \
+    bash -c "source /root/.bashrc && foundryup" && \
+    apt-get remove -y curl git && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Add Foundry binaries to PATH
+ENV PATH="/root/.foundry/bin:${PATH}"
