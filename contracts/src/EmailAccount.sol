@@ -39,7 +39,7 @@ contract EmailAccount is BaseAccount, EmailSigner {
         return IEntryPoint(entryPointAddress);
     }
 
-    /// @notice Validates the signature of a user operation
+    /// @notice Validates the signature of a user operation. **NOTE: this implementation violates the ERC-4337 opcode rules**
     /// @param userOp The user operation to validate
     /// @param userOpHash The hash of the user operation
     /// @return validationData 0 if valid, 1 if invalid
@@ -47,7 +47,19 @@ contract EmailAccount is BaseAccount, EmailSigner {
         PackedUserOperation calldata userOp,
         bytes32 userOpHash
     ) internal override returns (uint256 validationData) {
-        return 0;
+        // check if the hash has already been signed
+        if (isHashSigned[userOpHash]) {
+            return 0;
+        }
+
+        // check if the signature is valid
+        try
+            this.esign(abi.decode(userOp.signature, (IEmailAuth.EmailAuthMsg)))
+        {
+            return 0;
+        } catch {
+            return 1;
+        }
     }
 
     /// @notice Execute a transaction from this account

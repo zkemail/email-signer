@@ -5,7 +5,7 @@ module.exports = {
   networks: {
     dev: {
       url: "http://localhost:8545",
-    },
+    }
   },
   paths: {
     sources: "./src",

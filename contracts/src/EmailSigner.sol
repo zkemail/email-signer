@@ -33,6 +33,12 @@ contract EmailSigner is Initializable {
         emailAuthAddr = deployEmailAuthProxy(_accountSalt);
     }
 
+    function abiEncode(
+        IEmailAuth.EmailAuthMsg memory emailAuthMsg
+    ) public pure returns (bytes memory) {
+        return abi.encode(emailAuthMsg);
+    }
+
     /// @notice Signs a hash using the email command
     function esign(
         IEmailAuth.EmailAuthMsg memory emailAuthMsg

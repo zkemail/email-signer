@@ -1,17 +1,27 @@
 import { expect } from "chai";
-import { Address, EmailAccount, EmailAccountFactory, Verifier, UserOverrideableDKIMRegistry, EmailAuth, Groth16Verifier } from "../../typechain-types";
+import { Address, EmailAccount, EmailAccountFactory, Verifier, UserOverrideableDKIMRegistry, EmailAuth, Groth16Verifier, MockDKIMRegistry } from "../../typechain-types";
 import { ethers } from "hardhat";
 import { AbstractProvider, JsonRpcProvider } from "ethers";
 import sendUserOpAndWait, { generateUnsignedUserOp, getUserOpHash } from "./userOpUtils";
+import { signHash } from "./eSign";
+import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
 describe("EmailAccount", () => {
+
     let emailAccountFactory: EmailAccountFactory;
     let emailAccountImpl: EmailAccount;
     let emailAccount: EmailAccount;
     let verifier: Verifier;
-    let dkim: UserOverrideableDKIMRegistry;
+    let dkim: MockDKIMRegistry;
     let emailAuthImpl: EmailAuth;
-    let salt = `0x${"0".repeat(64)}`;
+
+    let email = "snparvizi75@gmail.com";
+    let accountCode = "0x22a2d51a892f866cf3c6cc4e138ba87a8a5059a1d80dea5b8ee8232034a105b7";
+    let salt = `0x200ab4951e3c39b9d18aa3a1dd748cc206bdf7f4999144e5a2c71fabd0537af1`;
+
+    let domainName = "gmail.com";
+    let publicKeyHash = "0x0ea9c777dc7110e5a9e89b13f0cfc540e3845ba120b2b6dc24024d61488d4788";
+    let deployer: SignerWithAddress;
 
     let context: {
         provider: JsonRpcProvider;
@@ -20,7 +30,7 @@ describe("EmailAccount", () => {
     }
 
     before(async () => {
-        const [deployer] = await ethers.getSigners();
+        [deployer] = await ethers.getSigners();
         const initialOwner = await deployer.getAddress();
 
         const bundlerProvider = new ethers.JsonRpcProvider(
@@ -48,7 +58,7 @@ describe("EmailAccount", () => {
         };
 
         // Deploy DKIM Registry
-        const dkimFactory = await ethers.getContractFactory("UserOverrideableDKIMRegistry");
+        const dkimFactory = await ethers.getContractFactory("MockDKIMRegistry");
         const dkimImpl = await dkimFactory.deploy();
 
         const ERC1967ProxyFactory = await ethers.getContractFactory("ERC1967Proxy");
@@ -60,7 +70,7 @@ describe("EmailAccount", () => {
                 0 // no time delay for testing
             ])
         );
-        dkim = await ethers.getContractAt("UserOverrideableDKIMRegistry", await dkimProxy.getAddress());
+        dkim = await ethers.getContractAt("MockDKIMRegistry", await dkimProxy.getAddress());
 
         // Deploy Verifier
         const verifierFactory = await ethers.getContractFactory("Verifier");
@@ -136,6 +146,12 @@ describe("EmailAccount", () => {
 
     it("should be able to send ETH to another account", async () => {
         const receipt = ethers.Wallet.createRandom().address;
+        await dkim.connect(deployer).setDKIMPublicKeyHash(
+            domainName,
+            publicKeyHash,
+            await deployer.getAddress(),
+            "0x"
+        );
         await assertSendEth(ethers.parseEther("100"), receipt);
     });
 
@@ -161,7 +177,15 @@ describe("EmailAccount", () => {
             Number(chainId)
         );
 
-        unsignedUserOperation.signature; // todo: sign the user op
+        const signature = await signHash(
+            await dkim.getAddress() as `0x${string}`,
+            accountCode, // account code
+            email,
+            BigInt(userOpHash).toString(),
+            1200000
+        );
+
+        unsignedUserOperation.signature = await emailAccount.abiEncode(signature);
 
         return unsignedUserOperation;
     }
