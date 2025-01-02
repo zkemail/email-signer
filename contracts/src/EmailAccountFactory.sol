@@ -16,7 +16,6 @@ contract EmailAccountFactory {
     address public emailAuthImplementation;
     address public emailAccountImplementation;
     address public entryPoint;
-    address public aggregator;
 
     UserOverrideableDKIMRegistry dkimImpl;
     Verifier verifierImpl;
@@ -27,15 +26,13 @@ contract EmailAccountFactory {
         address _verifierAddr,
         address _dkimAddr,
         address _emailAuthImplementationAddr,
-        address _emailAccountImplementationAddr,
-        address _aggregator
+        address _emailAccountImplementationAddr
     ) {
         verifier = _verifierAddr;
         dkim = _dkimAddr;
         emailAuthImplementation = _emailAuthImplementationAddr;
         emailAccountImplementation = _emailAccountImplementationAddr;
         entryPoint = _entryPoint;
-        aggregator = _aggregator;
     }
 
     /// @notice Get the deterministic address where an EmailAccount contract will be deployed
@@ -89,7 +86,6 @@ contract EmailAccountFactory {
                     verifier,
                     dkim,
                     emailAuthImplementation,
-                    aggregator,
                     _accountSalt
                 )
             );

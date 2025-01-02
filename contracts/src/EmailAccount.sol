@@ -12,8 +12,6 @@ contract EmailAccount is BaseAccount, EmailSigner {
     /// @notice The EntryPoint contract address
     address private entryPointAddress;
 
-    address public aggregator;
-
     /// @notice Initializes the EmailAccount contract
     /// @param _entryPoint The EntryPoint contract address
     /// @param _verifierAddr The address of the verifier
@@ -25,7 +23,6 @@ contract EmailAccount is BaseAccount, EmailSigner {
         address _verifierAddr,
         address _dkimAddr,
         address _emailAuthImplementationAddr,
-        address _aggregator,
         bytes32 _accountSalt
     ) public initializer {
         super.initialize(
@@ -35,7 +32,6 @@ contract EmailAccount is BaseAccount, EmailSigner {
             _accountSalt
         );
         entryPointAddress = _entryPoint;
-        aggregator = _aggregator;
     }
 
     /// @inheritdoc BaseAccount
@@ -51,12 +47,7 @@ contract EmailAccount is BaseAccount, EmailSigner {
         PackedUserOperation calldata userOp,
         bytes32 userOpHash
     ) internal override returns (uint256 validationData) {
-        ValidationData memory data = ValidationData({
-            aggregator: aggregator,
-            validAfter: 0,
-            validUntil: 0
-        });
-        return _packValidationData(data);
+        return 0;
     }
 
     /// @notice Execute a transaction from this account
