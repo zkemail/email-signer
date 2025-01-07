@@ -18,6 +18,14 @@ contract EmailSigner is Initializable {
     /// @dev bytes4(keccak256("isValidSignature(bytes32,bytes)"))
     bytes4 internal constant MAGICVALUE = 0x1626ba7e;
 
+    /// @dev Emitted when initialize is called
+    event Initialize(
+        address verifier,
+        address dkim,
+        address emailAuthImplementation,
+        bytes32 accountSalt
+    );
+
     /// @dev Emitted when a hash is signed via email command
     event SignHashCommand(bytes32 indexed hash);
 
@@ -35,10 +43,24 @@ contract EmailSigner is Initializable {
         address _emailAuthImplementationAddr,
         bytes32 _accountSalt
     ) public initializer {
+        require(
+            _verifierAddr != address(0) &&
+                _dkimAddr != address(0) &&
+                _emailAuthImplementationAddr != address(0),
+            "zero address not allowed"
+        );
+
         verifier = _verifierAddr;
         dkim = _dkimAddr;
         emailAuthImplementation = _emailAuthImplementationAddr;
         emailAuthAddr = deployEmailAuthProxy(_accountSalt);
+
+        emit Initialize(
+            _verifierAddr,
+            _dkimAddr,
+            _emailAuthImplementationAddr,
+            _accountSalt
+        );
     }
 
     /// @notice Signs a hash using an authenticated email command
