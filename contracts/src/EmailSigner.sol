@@ -47,11 +47,14 @@ contract EmailSigner is Initializable {
     function esign(
         IEmailAuth.EmailAuthMsg memory emailAuthMsg
     ) public returns (bytes32 hash) {
+        // check if sender authorized the correct template
         uint256 templateId = computeTemplateId(0);
         require(templateId == emailAuthMsg.templateId, "invalid template id");
 
+        // check ZK proof and account salt
         IEmailAuth(emailAuthAddr).authEmail(emailAuthMsg);
 
+        // record signed hash
         hash = abi.decode(emailAuthMsg.commandParams[0], (bytes32));
         isHashSigned[hash] = true;
         emit SignHashCommand(hash);
