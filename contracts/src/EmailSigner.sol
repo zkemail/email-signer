@@ -93,7 +93,7 @@ contract EmailSigner is Initializable {
     function deployEmailAuthProxy(
         bytes32 accountSalt
     ) internal returns (address) {
-        ERC1967Proxy proxy = new ERC1967Proxy(
+        ERC1967Proxy proxy = new ERC1967Proxy{salt: accountSalt}(
             emailAuthImplementation,
             abi.encodeCall(
                 IEmailAuth.initialize,
