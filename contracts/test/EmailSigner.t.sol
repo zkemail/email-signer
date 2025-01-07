@@ -78,7 +78,30 @@ contract EmailSignerTest is Test {
         emailSigner = EmailSigner(factory.getEmailSignerAddress(TEST_SALT));
     }
 
-    function testInitialization() public view {
+    // Helper function to create a base EmailAuthMsg
+    function _createBaseEmailAuthMsg(
+        bytes32 hash
+    ) internal view returns (IEmailAuth.EmailAuthMsg memory) {
+        IEmailAuth.EmailAuthMsg memory _msg;
+        _msg.templateId = emailSigner.computeTemplateId(0);
+        _msg.commandParams = new bytes[](1);
+        _msg.commandParams[0] = abi.encode(hash);
+        _msg.skippedCommandPrefix = 0;
+        _msg.proof = IEmailAuth.EmailProof(
+            "test.com",
+            keccak256("test public key"),
+            block.timestamp,
+            "test",
+            keccak256("test nullifier"),
+            keccak256("test salt"),
+            true,
+            abi.encodePacked(uint256(123456789))
+        );
+        return _msg;
+    }
+
+    // Group initialization tests
+    function test_Initialization_CorrectAddresses() public view {
         assertEq(
             emailSigner.verifier(),
             address(verifier),
@@ -92,7 +115,7 @@ contract EmailSignerTest is Test {
         );
     }
 
-    function testComputeTemplateId() public view {
+    function test_Initialization_TemplateIdComputation() public view {
         uint templateId = emailSigner.computeTemplateId(0);
         assertEq(
             templateId,
@@ -101,7 +124,8 @@ contract EmailSignerTest is Test {
         );
     }
 
-    function testIsValidSignatureBeforeSigning() public view {
+    // Group signature validation tests
+    function test_Signature_InvalidBeforeSigning() public view {
         bytes32 testHash = keccak256("test");
         bytes memory emptySignature;
 
@@ -113,49 +137,67 @@ contract EmailSignerTest is Test {
         );
     }
 
-    function testGetSafeSignature() public view {
-        address signer = address(0x123);
-        bytes memory data = "test data";
+    function test_Signature_ValidAfterSigning() public {
+        bytes32 testHash = keccak256("test");
+        IEmailAuth.EmailAuthMsg memory msg = _createBaseEmailAuthMsg(testHash);
 
-        bytes memory signature = emailSigner.getSafeSignature(signer, data);
-
-        // Extract components from signature
-        (uint8 v, bytes32 r, bytes32 s) = SignatureDecoder.signatureSplit(
-            signature,
-            0
+        _mockAndExpect(
+            address(emailAuth),
+            abi.encodeWithSelector(IEmailAuth.authEmail.selector, msg),
+            abi.encode(true)
         );
 
-        // Verify r contains the signer address
-        assertEq(
-            address(uint160(uint256(r))),
-            signer,
-            "Wrong signer address in r"
-        );
-
-        // Verify s contains offset (65)
-        assertEq(uint256(s), 65, "Wrong offset in s");
-
-        // Verify v is 0 for contract signatures
-        assertEq(v, 0, "Wrong v value");
-
-        // Verify total signature length
-        assertEq(
-            signature.length,
-            65 + 32 + data.length,
-            "Wrong signature length"
-        );
-
-        bytes memory contractSignature;
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            // The signature data for contract signatures is appended to the concatenated signatures and the offset is stored in s
-            contractSignature := add(add(signature, s), 0x20)
-        }
+        emailSigner.esign(msg);
 
         assertEq(
-            keccak256(contractSignature),
-            keccak256(data),
-            "Wrong appended data"
+            emailSigner.isHashSigned(testHash),
+            true,
+            "Hash should be marked as signed after successful esign"
         );
+
+        bytes4 result = emailSigner.isValidSignature(testHash, "");
+        assertEq(
+            result,
+            bytes4(0x1626ba7e), // Magic value for valid signature
+            "Should return valid signature after signing"
+        );
+    }
+
+    // Group esign tests
+    function test_Esign_SucceedsWithValidProof() public {
+        bytes32 testHash = keccak256("test");
+        IEmailAuth.EmailAuthMsg memory msg = _createBaseEmailAuthMsg(testHash);
+
+        _mockAndExpect(
+            address(emailAuth),
+            abi.encodeWithSelector(IEmailAuth.authEmail.selector, msg),
+            abi.encode(true)
+        );
+
+        emailSigner.esign(msg);
+        assertTrue(emailSigner.isHashSigned(testHash), "Hash should be signed");
+    }
+
+    function test_Esign_RevertsWithInvalidProof() public {
+        bytes32 testHash = keccak256("test");
+        IEmailAuth.EmailAuthMsg memory msg = _createBaseEmailAuthMsg(testHash);
+
+        vm.mockCallRevert(
+            address(emailAuth),
+            abi.encodeWithSelector(IEmailAuth.authEmail.selector, msg),
+            "auth failed"
+        );
+
+        vm.expectRevert("auth failed");
+        emailSigner.esign(msg);
+    }
+
+    function _mockAndExpect(
+        address _target,
+        bytes memory _call,
+        bytes memory _ret
+    ) internal {
+        vm.mockCall(_target, _call, _ret);
+        vm.expectCall(_target, _call);
     }
 }

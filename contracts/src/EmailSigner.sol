@@ -14,7 +14,7 @@ contract EmailSigner is Initializable {
     address public emailAuthAddr;
 
     // bytes4(keccak256("isValidSignature(bytes32,bytes)")
-    bytes4 internal constant MAGICVALUE = 0x20c13b0b;
+    bytes4 internal constant MAGICVALUE = 0x1626ba7e;
 
     event SignHashCommand(bytes32 indexed hash);
 
