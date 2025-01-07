@@ -19,3 +19,7 @@ cache/
 out/
 
 lib/
+
+typechain-types/
+.ic.pem
+config.json
