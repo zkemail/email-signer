@@ -425,229 +425,358 @@ export const emailAuthAbi = [
 ] as const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// EmitEmailCommand
+// EmailSignerFactory
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export const emitEmailCommandAbi = [
+export const emailSignerFactoryAbi = [
   {
-    type: 'constructor',
-    inputs: [
-      { name: '_verifierAddr', internalType: 'address', type: 'address' },
-      { name: '_dkimAddr', internalType: 'address', type: 'address' },
+    "type": "constructor",
+    "inputs": [
       {
-        name: '_emailAuthImplementationAddr',
-        internalType: 'address',
-        type: 'address',
+        "name": "_verifierAddr",
+        "type": "address",
+        "internalType": "address"
       },
-    ],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'commandTemplates',
-    outputs: [{ name: '', internalType: 'string[][]', type: 'string[][]' }],
-    stateMutability: 'pure',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: 'owner', internalType: 'address', type: 'address' },
-      { name: 'accountSalt', internalType: 'bytes32', type: 'bytes32' },
-    ],
-    name: 'computeEmailAuthAddress',
-    outputs: [{ name: '', internalType: 'address', type: 'address' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'templateIdx', internalType: 'uint256', type: 'uint256' }],
-    name: 'computeTemplateId',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'pure',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'dkim',
-    outputs: [{ name: '', internalType: 'address', type: 'address' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'dkimAddr',
-    outputs: [{ name: '', internalType: 'address', type: 'address' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'emailAuthImplementation',
-    outputs: [{ name: '', internalType: 'address', type: 'address' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'emailAuthImplementationAddr',
-    outputs: [{ name: '', internalType: 'address', type: 'address' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [
       {
-        name: 'emailAuthMsg',
-        internalType: 'struct EmailAuthMsg',
-        type: 'tuple',
-        components: [
-          { name: 'templateId', internalType: 'uint256', type: 'uint256' },
-          { name: 'commandParams', internalType: 'bytes[]', type: 'bytes[]' },
+        "name": "_dkimAddr",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_emailAuthImplementationAddr",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_emailSignerImplementationAddr",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "deployEmailSigner",
+    "inputs": [
+      {
+        "name": "_accountSalt",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "dkim",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "emailAuthImplementation",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "emailSignerImplementation",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getEmailSignerAddress",
+    "inputs": [
+      {
+        "name": "_accountSalt",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "verifier",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  }
+] as const;
+
+export const emailSignerAbi = [
+  {
+    "type": "function",
+    "name": "computeTemplateId",
+    "inputs": [
+      {
+        "name": "templateIdx",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "dkim",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "emailAuthAddr",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "emailAuthImplementation",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "esign",
+    "inputs": [
+      {
+        "name": "emailAuthMsg",
+        "type": "tuple",
+        "internalType": "struct IEmailAuth.EmailAuthMsg",
+        "components": [
           {
-            name: 'skippedCommandPrefix',
-            internalType: 'uint256',
-            type: 'uint256',
+            "name": "templateId",
+            "type": "uint256",
+            "internalType": "uint256"
           },
           {
-            name: 'proof',
-            internalType: 'struct EmailProof',
-            type: 'tuple',
-            components: [
-              { name: 'domainName', internalType: 'string', type: 'string' },
-              {
-                name: 'publicKeyHash',
-                internalType: 'bytes32',
-                type: 'bytes32',
-              },
-              { name: 'timestamp', internalType: 'uint256', type: 'uint256' },
-              { name: 'maskedCommand', internalType: 'string', type: 'string' },
-              {
-                name: 'emailNullifier',
-                internalType: 'bytes32',
-                type: 'bytes32',
-              },
-              { name: 'accountSalt', internalType: 'bytes32', type: 'bytes32' },
-              { name: 'isCodeExist', internalType: 'bool', type: 'bool' },
-              { name: 'proof', internalType: 'bytes', type: 'bytes' },
-            ],
+            "name": "commandParams",
+            "type": "bytes[]",
+            "internalType": "bytes[]"
           },
-        ],
-      },
-      { name: 'owner', internalType: 'address', type: 'address' },
-      { name: 'templateIdx', internalType: 'uint256', type: 'uint256' },
+          {
+            "name": "skippedCommandPrefix",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "proof",
+            "type": "tuple",
+            "internalType": "struct IEmailAuth.EmailProof",
+            "components": [
+              {
+                "name": "domainName",
+                "type": "string",
+                "internalType": "string"
+              },
+              {
+                "name": "publicKeyHash",
+                "type": "bytes32",
+                "internalType": "bytes32"
+              },
+              {
+                "name": "timestamp",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "maskedCommand",
+                "type": "string",
+                "internalType": "string"
+              },
+              {
+                "name": "emailNullifier",
+                "type": "bytes32",
+                "internalType": "bytes32"
+              },
+              {
+                "name": "accountSalt",
+                "type": "bytes32",
+                "internalType": "bytes32"
+              },
+              {
+                "name": "isCodeExist",
+                "type": "bool",
+                "internalType": "bool"
+              },
+              {
+                "name": "proof",
+                "type": "bytes",
+                "internalType": "bytes"
+              }
+            ]
+          }
+        ]
+      }
     ],
-    name: 'emitEmailCommand',
-    outputs: [],
-    stateMutability: 'nonpayable',
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    type: 'function',
-    inputs: [],
-    name: 'verifier',
-    outputs: [{ name: '', internalType: 'address', type: 'address' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'verifierAddr',
-    outputs: [{ name: '', internalType: 'address', type: 'address' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
+    "type": "function",
+    "name": "initialize",
+    "inputs": [
       {
-        name: 'emailAuthAddr',
-        internalType: 'address',
-        type: 'address',
-        indexed: true,
+        "name": "_verifierAddr",
+        "type": "address",
+        "internalType": "address"
       },
       {
-        name: 'command',
-        internalType: 'uint256',
-        type: 'uint256',
-        indexed: true,
+        "name": "_dkimAddr",
+        "type": "address",
+        "internalType": "address"
       },
+      {
+        "name": "_emailAuthImplementationAddr",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_accountSalt",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
     ],
-    name: 'DecimalsCommand',
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    type: 'event',
-    anonymous: false,
-    inputs: [
+    "type": "function",
+    "name": "isHashSigned",
+    "inputs": [
       {
-        name: 'emailAuthAddr',
-        internalType: 'address',
-        type: 'address',
-        indexed: true,
-      },
-      {
-        name: 'command',
-        internalType: 'address',
-        type: 'address',
-        indexed: true,
-      },
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
     ],
-    name: 'EthAddrCommand',
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
-    type: 'event',
-    anonymous: false,
-    inputs: [
+    "type": "function",
+    "name": "verifier",
+    "inputs": [],
+    "outputs": [
       {
-        name: 'emailAuthAddr',
-        internalType: 'address',
-        type: 'address',
-        indexed: true,
-      },
-      {
-        name: 'command',
-        internalType: 'int256',
-        type: 'int256',
-        indexed: true,
-      },
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
     ],
-    name: 'IntCommand',
+    "stateMutability": "view"
   },
   {
-    type: 'event',
-    anonymous: false,
-    inputs: [
+    "type": "event",
+    "name": "Initialized",
+    "inputs": [
       {
-        name: 'emailAuthAddr',
-        internalType: 'address',
-        type: 'address',
-        indexed: true,
-      },
-      {
-        name: 'command',
-        internalType: 'string',
-        type: 'string',
-        indexed: true,
-      },
+        "name": "version",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      }
     ],
-    name: 'StringCommand',
+    "anonymous": false
   },
   {
-    type: 'event',
-    anonymous: false,
-    inputs: [
+    "type": "event",
+    "name": "SignHashCommand",
+    "inputs": [
       {
-        name: 'emailAuthAddr',
-        internalType: 'address',
-        type: 'address',
-        indexed: true,
-      },
-      {
-        name: 'command',
-        internalType: 'uint256',
-        type: 'uint256',
-        indexed: true,
-      },
+        "name": "hash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      }
     ],
-    name: 'UintCommand',
+    "anonymous": false
   },
-] as const
+  {
+    "type": "error",
+    "name": "InvalidInitialization",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotInitializing",
+    "inputs": []
+  }
+] as const;

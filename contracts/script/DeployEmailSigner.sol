@@ -7,7 +7,7 @@ import "@zk-email/ether-email-auth-contracts/src/utils/Verifier.sol";
 import "@zk-email/ether-email-auth-contracts/src/utils/Groth16Verifier.sol";
 import "@zk-email/contracts/UserOverrideableDKIMRegistry.sol";
 import "@zk-email/ether-email-auth-contracts/src/EmailAuth.sol";
-import "../src/EmitEmailCommand.sol";
+import "../src/EmailSignerFactory.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract Deploy is Script {
@@ -16,7 +16,8 @@ contract Deploy is Script {
     Verifier verifierImpl;
     Verifier verifier;
     EmailAuth emailAuthImpl;
-    EmitEmailCommand emitEmailCommand;
+    EmailSigner emailSignerImpl;
+    EmailSignerFactory emailSignerFactory;
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -31,9 +32,11 @@ contract Deploy is Script {
         }
         uint256 timeDelay = vm.envOr("DKIM_DELAY", uint256(0));
         console.log("DKIM_DELAY: %s", timeDelay);
+
         vm.startBroadcast(deployerPrivateKey);
         address initialOwner = vm.addr(deployerPrivateKey);
         console.log("Initial owner: %s", vm.toString(initialOwner));
+
         // Deploy Useroverridable DKIM registry
         {
             dkimImpl = new UserOverrideableDKIMRegistry();
@@ -78,18 +81,28 @@ contract Deploy is Script {
                 address(emailAuthImpl)
             );
         }
-        // // Deploy EmitEmailCommand
+        // Deploy EmailSignerImplementation
         {
-            emitEmailCommand = new EmitEmailCommand(
-                address(verifier),
-                address(dkim),
-                address(emailAuthImpl)
-            );
+            emailSignerImpl = new EmailSigner();
             console.log(
-                "EmitEmailCommand deployed at: %s",
-                address(emitEmailCommand)
+                "EmailSigner implementation deployed at: %s",
+                address(emailSignerImpl)
             );
         }
+        // Deploy EmailSignerFactory
+        {
+            emailSignerFactory = new EmailSignerFactory(
+                address(verifier),
+                address(dkim),
+                address(emailAuthImpl),
+                address(emailSignerImpl)
+            );
+            console.log(
+                "EmailSignerFactory deployed at: %s",
+                address(emailSignerFactory)
+            );
+        }
+
         vm.stopBroadcast();
     }
 }
